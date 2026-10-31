@@ -1,0 +1,18 @@
+# Also covered by the root .gitignore — kept here too since these are
+# the paths people expect to find in a Next.js app's own .gitignore.
+node_modules/
+.next/
+out/
+
+# env — never committed. NEXT_PUBLIC_* values (NEXT_PUBLIC_BACKEND_URL,
+# NEXT_PUBLIC_GOOGLE_CLIENT_ID, NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED) come from the Vercel project's
+# environment variables; local values go in .env.local. frontend/.env was untracked in phase S2.
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+.vercel

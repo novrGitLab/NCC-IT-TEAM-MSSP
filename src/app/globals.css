@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+/* Manual class-based dark mode (Tailwind v4) — `dark:` utilities respond to
+   a `.dark` class on <html> (set by next-themes), not just OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* ---- NovaSOC NCC brand palette — white/blue only, fixed, do not change per theme ----
+     2026-10-31: rebranded from Cybernovr's purple/orange palette for the NovaSOC NCC
+     demonstration edition. Purple and orange are retired as brand colors — every former
+     purple/orange accent now resolves to the primary or dark blue below. Red stays reserved
+     for destructive/critical actions only. */
+  --brand-blue: #2563EB;
+  --brand-blue-dark: #153F83;
+  --brand-red: #CC2B2B;
+  --brand-red-hover: #B02424;
+  --brand-purple: #2563EB;        /* retired: now an alias for brand-blue, not a separate hue */
+  --brand-purple-hover: #153F83;
+  --brand-orange: #2563EB;        /* retired: CTA color is now brand-blue, not orange */
+  --brand-orange-hover: #153F83;
+  --brand-white: #FFFFFF;
+  --brand-grey-50: #F8F9FC;
+  --brand-grey-100: #EEF0F6;
+  --brand-grey-300: #C4C9D8;
+  --brand-grey-500: #7A8099;
+  --brand-grey-800: #1C1F2E;
+  --brand-grey-900: #0D0F1A;
+
+  /* Semantic status colors — kept distinct from the brand triad on purpose:
+     success/warning need to read as "good/caution" regardless of brand color. */
+  --brand-success: #16A34A;
+  --brand-warning: #F59E0B;
+
+  /* ---- Semantic tokens — flip between light/dark. Light is the default theme. ----
+     Values below are the NovaSOC NCC white/blue system: white app background, a light
+     blue-tinted secondary surface, near-black primary text, slate secondary text, and a
+     light blue border — per the NovaSOC NCC brand spec. */
+  --surface: #FFFFFF;
+  --card: var(--brand-white);
+  --card-muted: #F1F6FF;
+  --border-default: #DBEAFE;
+  --foreground: #0F172A;
+  --foreground-muted: #475569;
+}
+
+:root.dark {
+  --surface: var(--brand-grey-900);
+  --card: #14172a;
+  --card-muted: #1a1e33;
+  --border-default: rgba(255, 255, 255, 0.1);
+  --foreground: var(--brand-white);
+  --foreground-muted: var(--brand-grey-500);
+}
+
+/* Data-visualisation tokens (VMS). Each set validated with the dataviz palette validator against
+   the card surface it renders on (light #FFFFFF, dark #14172a):
+   - severity: an ordinal heat ramp, low -> critical (--ordinal: monotone, ΔL >= 0.06, light end
+     >= 2:1, hue spread <= 40°); info is a labelled neutral, not part of the ramp;
+   - progress: a one-hue brand-purple ordinal ramp, open -> verified;
+   - status (good/warning/serious/critical): reserved meanings, always shown with an icon + label. */
+:root {
+  --vz-sev-critical: #8c1b1b;
+  --vz-sev-high: #bf3a22;
+  --vz-sev-medium: #d9602a;
+  --vz-sev-low: #e0882f;
+  --vz-sev-info: #9aa0b4;
+  --vz-prog-1: #93c5fd;
+  --vz-prog-2: #3b82f6;
+  --vz-prog-3: #2563eb;
+  --vz-prog-4: #153F83;
+  --vz-neutral: #c4c9d8;
+  --vz-grid: #eef0f6;
+  --vz-axis: #c4c9d8;
+  --vz-good: #0ca30c;
+  --vz-warning: #fab219;
+  --vz-serious: #ec835a;
+  --vz-critical: #d03b3b;
+  /* categorical slots 1 and 3 (two-series lines; aqua needs visible labels on light: <3:1) */
+  --vz-cat-1: #2a78d6;
+  --vz-cat-3: #1baf7a;
+}
+:root.dark {
+  --vz-sev-critical: #ff8466;
+  --vz-sev-high: #e05a3a;
+  --vz-sev-medium: #bb472f;
+  --vz-sev-low: #8c3a2a;
+  --vz-sev-info: #5d6279;
+  --vz-prog-1: #1e3a8a;
+  --vz-prog-2: #1d4ed8;
+  --vz-prog-3: #3b82f6;
+  --vz-prog-4: #93c5fd;
+  --vz-neutral: #3a3f58;
+  --vz-grid: rgba(255, 255, 255, 0.06);
+  --vz-axis: rgba(255, 255, 255, 0.16);
+  --vz-cat-1: #3987e5;
+  --vz-cat-3: #199e70;
+}
+
+@keyframes vzfade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+@theme inline {
+  /* Raw brand hues — always literal, used for CTAs/badges/status regardless of theme */
+  --color-blue: var(--brand-blue);
+  --color-blue-dark: var(--brand-blue-dark);
+  --color-red: var(--brand-red);
+  --color-red-hover: var(--brand-red-hover);
+  --color-purple: var(--brand-purple);
+  --color-purple-hover: var(--brand-purple-hover);
+  --color-orange: var(--brand-orange);
+  --color-orange-hover: var(--brand-orange-hover);
+  --color-green: var(--brand-success);
+  --color-amber: var(--brand-warning);
+  --color-grey-50: var(--brand-grey-50);
+  --color-grey-100: var(--brand-grey-100);
+  --color-grey-300: var(--brand-grey-300);
+  --color-grey-500: var(--brand-grey-500);
+  --color-grey-800: var(--brand-grey-800);
+  --color-grey-900: var(--brand-grey-900);
+
+  /* Semantic tokens — these are what flip with the theme */
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-muted: var(--card-muted);
+  --color-border: var(--border-default);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+
+  /* NovaSOC NCC rebrand (2026-10-31): a handful of components use Tailwind's built-in
+     numbered purple- and orange- scale directly (e.g. bg-purple-700, text-orange-500) rather
+     than the brand-token aliases above. Overriding those scale steps here, instead of
+     editing every such component, retires purple and orange everywhere per the no-pink-or-
+     purple-accents brand rule, by aliasing both scales to Tailwind's own blue values. */
+  --color-purple-50: #eff6ff;
+  --color-purple-100: #dbeafe;
+  --color-purple-200: #bfdbfe;
+  --color-purple-300: #93c5fd;
+  --color-purple-400: #60a5fa;
+  --color-purple-500: #3b82f6;
+  --color-purple-600: #2563eb;
+  --color-purple-700: #1d4ed8;
+  --color-purple-800: #1e40af;
+  --color-purple-900: #1e3a8a;
+  --color-purple-950: #172554;
+  --color-orange-50: #eff6ff;
+  --color-orange-100: #dbeafe;
+  --color-orange-200: #bfdbfe;
+  --color-orange-300: #93c5fd;
+  --color-orange-400: #60a5fa;
+  --color-orange-500: #3b82f6;
+  --color-orange-600: #2563eb;
+  --color-orange-700: #1d4ed8;
+  --color-orange-800: #1e40af;
+  --color-orange-900: #1e3a8a;
+  --color-orange-950: #172554;
+  --color-pink-50: #eff6ff;
+  --color-pink-100: #dbeafe;
+  --color-pink-200: #bfdbfe;
+  --color-pink-300: #93c5fd;
+  --color-pink-400: #60a5fa;
+  --color-pink-500: #3b82f6;
+  --color-pink-600: #2563eb;
+  --color-pink-700: #1d4ed8;
+  --color-pink-800: #1e40af;
+  --color-pink-900: #1e3a8a;
+  --color-pink-950: #172554;
+
+  --font-heading: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-data: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--surface);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #94A3B8;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* The one gradient the brand spec permits — functional loading shimmer, not decorative. */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, var(--color-grey-100) 0%, var(--brand-white) 50%, var(--color-grey-100) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}
