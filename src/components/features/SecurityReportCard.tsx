@@ -88,8 +88,8 @@ export function SecurityReportCard({ mode }: { mode: 'client' | 'staff' }) {
                 <h1 className="font-bold text-sm text-foreground mb-1">Security report card unavailable</h1>
                 <p className="text-xs text-foreground-muted">
                     {mode === 'client'
-                        ? 'Client portal sign-in isn’t connected to NovaSOC NCC’s data yet. Your SOC team can share your report card with you in the meantime.'
-                        : 'You need a NovaSOC NCC staff account to view client report cards.'}
+                        ? 'Client portal sign-in isn’t connected to NCC SOC’s data yet. Your SOC team can share your report card with you in the meantime.'
+                        : 'You need a NCC SOC staff account to view client report cards.'}
                 </p>
             </div>
         );
@@ -206,7 +206,7 @@ export function SecurityReportCard({ mode }: { mode: 'client' | 'staff' }) {
                 <Info size={14} className="shrink-0 mt-px" />
                 <p>
                     SLA targets (time to resolve): {Object.entries(d.definitions.sla_target_hours).map(([k, v]) => `${k} ${v}h`).join(' · ')}.
-                    Cases closed automatically by NovaSOC NCC&apos;s automation are not counted. Detection time is not tracked yet: {d.definitions.detection_time.replace(/^Not tracked — /, '')}
+                    Cases closed automatically by NCC SOC&apos;s automation are not counted. Detection time is not tracked yet: {d.definitions.detection_time.replace(/^Not tracked — /, '')}
                 </p>
             </div>
         </div>

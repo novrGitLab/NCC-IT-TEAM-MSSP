@@ -16,26 +16,46 @@ export function isAdminAuthenticated(): boolean {
     return getAdminToken() !== null;
 }
 
-// Best-effort decode of the admin JWT payload for display purposes only (name/email/role
-// in the sidebar footer) — never used for authorization, the backend is the source of truth.
+const USER_CACHE_KEY = 'admin_user_cache';
+
+// Display info (name/email/role) for the sidebar footer — never used for authorization, the
+// session cookie checked server-side on every request is the real auth boundary. Populated by
+// refreshAdminUserCache() after sign-in from GET /api/auth/me; this just reads that cache
+// synchronously so existing callers don't need to become async.
 export function getAdminUser(): AdminUser {
-    const fallback: AdminUser = { name: 'Admin User', email: '', role: 'Administrator', company: 'NovaSOC NCC' };
-    const token = getAdminToken();
-    if (!token) return fallback;
+    const fallback: AdminUser = { name: 'Admin User', email: '', role: 'Administrator', company: 'NCC SOC' };
+    if (typeof window === 'undefined') return fallback;
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const raw = sessionStorage.getItem(USER_CACHE_KEY);
+        if (!raw) return fallback;
+        const cached = JSON.parse(raw);
         return {
-            name: payload.name ?? fallback.name,
-            email: payload.email ?? fallback.email,
-            role: payload.role ?? fallback.role,
-            company: payload.company ?? fallback.company,
+            name: cached.name ?? fallback.name,
+            email: cached.email ?? fallback.email,
+            role: cached.role ?? fallback.role,
+            company: cached.company ?? fallback.company,
         };
     } catch {
         return fallback;
     }
 }
 
+/** Fetches /api/auth/me and caches it for getAdminUser(). Call once after sign-in. */
+export async function refreshAdminUserCache(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+        const { apiFetch, apiUrl } = await import('./api');
+        const res = await apiFetch(apiUrl('/api/auth/me'));
+        const me = await res.json();
+        if (res.ok && me?.email) sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify(me));
+    } catch {
+        // Best-effort — the sidebar falls back to generic display text, never blocks login.
+    }
+}
+
 export function adminSignOut(): void {
     localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_CACHE_KEY);
+    void import('./api').then(({ apiFetch, apiUrl }) => apiFetch(apiUrl('/api/auth/signout'), { method: 'POST' })).catch(() => {});
     window.location.href = '/login';
 }

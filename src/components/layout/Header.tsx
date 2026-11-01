@@ -108,9 +108,9 @@ export function Header({ initials, onSignOut, onMenu }: HeaderProps) {
                 <span className="shrink-0"><Logo size="sm" /></span>
                 <span
                     className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-blue bg-[#F1F6FF] border border-[#DBEAFE] rounded-full px-2 py-0.5"
-                    title="NovaSOC NCC demonstration build — every record on screen is simulated, not live telemetry."
+                    title="Evaluation environment — telemetry and response actions are simulated; no external assets are connected."
                 >
-                    Demo Environment
+                    Evaluation Environment
                 </span>
                 <span className="text-grey-300 hidden sm:inline">/</span>
                 {/* Long path segments (e.g. a domain name) must not push the header controls off-screen. */}

@@ -449,7 +449,7 @@ export function NovrAI() {
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-foreground-muted mt-2 px-1">
                         <span>Press <kbd className="font-mono bg-card border border-border px-1 py-0.2 rounded text-[9px]">Enter</kbd> to send, <kbd className="font-mono bg-card border border-border px-1 py-0.2 rounded text-[9px]">Shift+Enter</kbd> for new line</span>
-                        <span>NovaSOC NCC Intelligence Suite</span>
+                        <span>NCC SOC Intelligence Suite</span>
                     </div>
                 </div>
             </div>

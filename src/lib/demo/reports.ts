@@ -1,4 +1,4 @@
-// NovaSOC NCC — DEMONSTRATION FIXTURE. Sample reporting/insights data.
+// NCC SOC — DEMONSTRATION FIXTURE. Sample reporting/insights data.
 const now = Date.now();
 const daysAgo = (n: number) => new Date(now - n * 86_400_000).toISOString();
 

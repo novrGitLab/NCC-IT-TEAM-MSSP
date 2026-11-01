@@ -1,4 +1,4 @@
-// NovaSOC NCC — DEMONSTRATION FIXTURE. Collector/worker/onboarding walkthrough sample data.
+// NCC SOC — DEMONSTRATION FIXTURE. Collector/worker/onboarding walkthrough sample data.
 // No real collector is ever installed, executed or connected — every status below is simulated.
 const now = Date.now();
 const minsAgo = (n: number) => new Date(now - n * 60_000).toISOString();

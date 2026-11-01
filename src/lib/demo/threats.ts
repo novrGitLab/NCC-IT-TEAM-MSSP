@@ -1,4 +1,4 @@
-// NovaSOC NCC — DEMONSTRATION FIXTURE. Threat Intelligence sample data for the retained TI
+// NCC SOC — DEMONSTRATION FIXTURE. Threat Intelligence sample data for the retained TI
 // pages. TiFeed shape matches src/lib/ti.ts's TiFeed so TiSources.tsx renders unmodified.
 
 const now = Date.now();

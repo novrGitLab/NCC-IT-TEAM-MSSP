@@ -23,7 +23,7 @@ export interface Finding {
 }
 interface Detail {
     finding: Finding;
-    /** The scanner's own CVSS (P22): score, version and vector as reported. Not the NovaSOC NCC risk score. */
+    /** The scanner's own CVSS (P22): score, version and vector as reported. Not the NCC SOC risk score. */
     scanner_cvss?: { score: number | null; version: string | null; vector: string | null; source: string | null; observed_at: string | null } | null;
     evidence: { id: string; source: string; observed_at: string; matched_at: string | null; evidence: unknown; job_id: string | null }[];
     events: { id: string; at: string; actor: string; action: string; from_value: string | null; to_value: string | null; details: string | null }[];
@@ -94,7 +94,7 @@ export function FindingDetail({ id, onChanged }: { id: string; onChanged?: () =>
                     <Fact k="Scanner CVSS (severity)" v={data.scanner_cvss?.score !== null && data.scanner_cvss?.score !== undefined
                         ? <span title={data.scanner_cvss.vector ?? undefined}>{data.scanner_cvss.score}{data.scanner_cvss.version ? ` · CVSS v${data.scanner_cvss.version}` : ' · version not reported'}{data.scanner_cvss.source ? ` · ${data.scanner_cvss.source}` : ''}{data.scanner_cvss.vector && <span className="block font-mono text-[10px] text-foreground-muted break-all">{data.scanner_cvss.vector}</span>}</span>
                         : f.scanner_cvss ?? 'Not reported'} />
-                    <Fact k="NovaSOC NCC risk (contextual)" v={f.risk_score !== null ? `${f.risk_score} / 100 · ${f.priority ?? '—'}` : '—'} />
+                    <Fact k="NCC SOC risk (contextual)" v={f.risk_score !== null ? `${f.risk_score} / 100 · ${f.priority ?? '—'}` : '—'} />
                     <Fact k="CVE" v={f.cve_ids.length ? f.cve_ids.join(', ') : '—'} />
                     <Fact k="Rule" v={<span className="font-mono break-all">{f.rule_id}</span>} />
                     <Fact k="First seen" v={fmtWat(f.first_seen)} />

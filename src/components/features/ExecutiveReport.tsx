@@ -46,7 +46,7 @@ export function ExecutiveReport() {
             <div>
                 <h1 className="text-2xl font-black text-foreground">Executive Security Report</h1>
                 <p className="text-sm text-foreground-muted">
-                    {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — NovaSOC NCC Security Posture
+                    {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — NCC SOC Security Posture
                 </p>
             </div>
 

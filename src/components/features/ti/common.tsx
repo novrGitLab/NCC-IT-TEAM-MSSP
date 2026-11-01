@@ -34,7 +34,7 @@ export function TlpBadge({ tlp }: { tlp: Tlp | null | undefined }) {
 export type Basis = 'platform_record' | 'source_claim' | 'ai_assessment';
 const BASIS: Record<Basis, { label: string; tone: Tone; hint: string }> = {
     platform_record: { label: 'Fact', tone: 'good', hint: 'Shown by a record in the platform' },
-    source_claim: { label: 'Source claim', tone: 'warning', hint: 'Stated by a feed or report — not confirmed by NovaSOC NCC' },
+    source_claim: { label: 'Source claim', tone: 'warning', hint: 'Stated by a feed or report — not confirmed by NCC SOC' },
     ai_assessment: { label: 'AI inference', tone: 'neutral', hint: 'The model\'s own reasoning' },
 };
 /** Fact, source claim or inference — the three are never mixed. */

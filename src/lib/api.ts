@@ -4,25 +4,46 @@ import { portalSignOut } from './portal-auth';
 import { vmsOrgHeaderFor } from './vmsOrg';
 import { demoRespond } from './demo/router';
 
-// NovaSOC NCC is frontend-only and intentionally never calls a production backend. apiUrl()
-// still returns a same-origin-shaped URL (so relative-path logic elsewhere keeps working), but
-// apiFetch() below never actually sends it anywhere — every call is answered locally from
-// src/lib/demo/router.ts. There is deliberately no NEXT_PUBLIC_BACKEND_URL in this project.
+// NCC SOC is being migrated off the in-memory demo router onto real route handlers backed by the
+// persistent simulation engine (src/lib/simulation/). apiUrl() still returns a same-origin-shaped
+// URL so relative-path logic elsewhere keeps working. apiFetch() now branches: paths that have
+// been ported to a real src/app/api/**/route.ts (isPortedPath below) get a real same-origin
+// fetch() with the session cookie attached; everything else still goes through demoRespond()
+// (src/lib/demo/router.ts) exactly as before, until it's ported too. This keeps every calling
+// page/hook unmodified throughout the migration — same Response-shaped object back either way.
 export function apiUrl(path: string): string {
-    return `https://demo.novasoc-ncc.local${path}`;
+    return `https://demo.ncc-soc.local${path}`;
 }
 
-// Drop-in replacement for fetch() against apiUrl() targets. In the source NovaSOC NCC app this sent
-// a real HTTP request with a Bearer token; here it is the single interception point for the demo
-// data layer — every request is answered from demoRespond() (src/lib/demo/router.ts) instead of
-// reaching any network. This keeps every calling page/hook unmodified: same Response-shaped
-// object back, same .ok/.status/.json() contract, same 401 sign-out handling.
+const PORTED_EXACT = new Set([
+    '/api/auth/signin', '/api/auth/signout', '/api/auth/heartbeat', '/api/auth/me', '/api/auth/google', '/api/auth/set-password',
+    '/api/portal/status', '/api/portal/auth/signin', '/api/portal/auth/signout',
+    '/api/vms/dashboard', '/api/vms/overview', '/api/vms/assets', '/api/vms/findings', '/api/vms/findings/summary',
+    '/api/vms/scans', '/api/vms/risk', '/api/vms/remediation', '/api/vms/tasks',
+    '/api/vms/events', '/api/vms/endpoints', '/api/vms/report', '/api/vms/admin/status', '/api/vms/admin/wazuh/check', '/api/vms/eligibility/refresh',
+    '/api/client/vms/summary', '/api/client/vms/assets', '/api/client/vms/tasks',
+    '/api/ti/sources',
+    '/api/ai/generate', '/api/ai/artifacts',
+    '/api/invites',
+]);
+const PORTED_PATTERNS = [
+    /^\/api\/vms\/assets\/[^/]+$/, /^\/api\/vms\/assets\/[^/]+\/graph$/,
+    /^\/api\/vms\/findings\/[^/]+$/, /^\/api\/vms\/findings\/[^/]+\/tasks$/,
+    /^\/api\/vms\/tasks\/[^/]+$/,
+    /^\/api\/ai\/artifacts\/[^/]+\/feedback$/,
+];
+
+/** True once a path's src/app/api/**\/route.ts handler exists — see the route migration plan. */
+function isPortedPath(path: string): boolean {
+    return PORTED_EXACT.has(path) || PORTED_PATTERNS.some((re) => re.test(path));
+}
+
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
     const token = getAuthToken();
     const headers = new Headers(init.headers);
     if (token) headers.set('Authorization', `Bearer ${token}`);
     // VMS pages viewing another organisation (lib/vmsOrg.ts) — harmless to keep computing even
-    // though there is no backend to audit it; avoids drifting from the source call shape.
+    // for demo-router paths; avoids drifting from the source call shape.
     const org = vmsOrgHeaderFor(input);
     if (org && !headers.has('X-Org-Id')) headers.set('X-Org-Id', org);
 
@@ -39,8 +60,16 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
     }
 
     const method = (init.method ?? 'GET').toUpperCase();
-    const { status, data } = demoRespond(method, path, query, init.body);
-    const res = new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+
+    let res: Response;
+    if (isPortedPath(path)) {
+        const qs = query.toString();
+        const relativeUrl = qs ? `${path}?${qs}` : path;
+        res = await fetch(relativeUrl, { ...init, credentials: 'include', headers });
+    } else {
+        const { status, data } = demoRespond(method, path, query, init.body);
+        res = new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+    }
 
     if (res.status === 401) {
         // Prefer whichever session actually looks active — a portal user hitting a

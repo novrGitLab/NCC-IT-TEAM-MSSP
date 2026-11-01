@@ -12,7 +12,7 @@ import { apiUrl, apiFetch } from '@/lib/api';
 // Every group shown is publicly documented by a named vendor or by MITRE ATT&CK, and each card
 // carries that citation. This page is explicit that it's reference material, not this
 // platform's own attribution — a SOC page that silently implies it tracked these groups itself
-// would be claiming a capability NovaSOC NCC doesn't have.
+// would be claiming a capability NCC SOC doesn't have.
 
 interface ThreatActor {
     id: string;

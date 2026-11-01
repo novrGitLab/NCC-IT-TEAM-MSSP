@@ -19,7 +19,7 @@ const RAIL_STORAGE_KEY = 'novrsoc_rail_open';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const [authChecked, setAuthChecked] = useState(false);
-    const [user, setUser] = useState({ name: 'Admin User', email: '', role: 'Administrator', company: 'NovaSOC NCC' });
+    const [user, setUser] = useState({ name: 'Admin User', email: '', role: 'Administrator', company: 'NCC SOC' });
     const [railOpen, setRailOpen] = useState(true);
     const [navOpen, setNavOpen] = useState(false);
 

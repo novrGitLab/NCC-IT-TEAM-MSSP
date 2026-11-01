@@ -1,7 +1,7 @@
 'use client';
 
 // Client VMS portal (phase P21): a client's own organisation — overview, assets, vulnerabilities,
-// remediation and reports — read from /api/client/vms with the client's own NovaSOC NCC session. The
+// remediation and reports — read from /api/client/vms with the client's own NCC SOC session. The
 // backend fixes the organisation from the token and confines the session to /api/client/; these
 // pages hold no organisation choice and show nothing about the SOC's scanners or staff.
 
@@ -44,7 +44,7 @@ export function ClientVmsOverview() {
     const k = d?.kpis;
     return (
         <div className="space-y-5">
-            <PageHeader icon={ShieldCheck} title="Vulnerability overview" description="Your organisation's exposure and vulnerabilities, as found by NovaSOC NCC's authorised scanning and your endpoint agents. Counted from stored records; nothing is estimated." />
+            <PageHeader icon={ShieldCheck} title="Vulnerability overview" description="Your organisation's exposure and vulnerabilities, as found by NCC SOC's authorised scanning and your endpoint agents. Counted from stored records; nothing is estimated." />
             {load.state === 'error' && <ErrorState error={load.error} status={load.status} onRetry={reload} />}
             {(d || load.state === 'loading') && <>
                 <section className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="Key figures">
@@ -112,7 +112,7 @@ export function ClientVmsAssets() {
     ];
     return (
         <div className="space-y-5">
-            <PageHeader icon={Boxes} title="Your assets" description="The hosts, domains and addresses of your organisation that NovaSOC NCC monitors, with their open vulnerabilities." actions={<ExportCsvButton filename="assets.csv" rows={rows?.map((a) => ({ ...a, open: a.findings.open, max_risk: a.findings.max_risk }))} columns={[{ key: 'value', header: 'Asset' }, { key: 'asset_type', header: 'Type' }, { key: 'exposure', header: 'Exposure' }, { key: 'criticality', header: 'Criticality' }, { key: 'open', header: 'Open vulnerabilities' }, { key: 'max_risk', header: 'Highest risk' }, { key: 'last_seen', header: 'Last seen' }]} />} />
+            <PageHeader icon={Boxes} title="Your assets" description="The hosts, domains and addresses of your organisation that NCC SOC monitors, with their open vulnerabilities." actions={<ExportCsvButton filename="assets.csv" rows={rows?.map((a) => ({ ...a, open: a.findings.open, max_risk: a.findings.max_risk }))} columns={[{ key: 'value', header: 'Asset' }, { key: 'asset_type', header: 'Type' }, { key: 'exposure', header: 'Exposure' }, { key: 'criticality', header: 'Criticality' }, { key: 'open', header: 'Open vulnerabilities' }, { key: 'max_risk', header: 'Highest risk' }, { key: 'last_seen', header: 'Last seen' }]} />} />
             <Select label="Exposure" value={exposure} onChange={setExposure} options={[['', 'Any exposure'], ['internet', 'Internet-facing'], ['internal', 'Internal'], ['unknown', 'Unknown']]} />
             {load.state === 'error' ? <ErrorState error={load.error} status={load.status} onRetry={reload} />
                 : <DataTable caption="Your assets" rows={rows} columns={columns} rowKey={(a) => a.id} onRowClick={(a) => router.push(`/client/vms/findings?asset_id=${a.id}`)} initialSort={{ key: 'open', dir: 'desc' }} empty="No assets recorded yet" />}
@@ -166,7 +166,7 @@ function ClientFinding({ id }: { id: string }) {
             <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2"><PriorityBadge priority={f.priority} /><SeverityBadge severity={f.scanner_severity} /><RiskScore score={f.risk_score} wide />{data.cve_intel.some((c) => c.kev) && <Tag strong>Known exploited</Tag>}<span className="ml-auto font-semibold text-foreground">{f.status_label}</span></div>
                 <p className="text-base font-black text-foreground">{f.title}</p>
-                <p className="text-foreground-muted">Scanner CVSS: <b className="text-foreground">{data.scanner_cvss?.score ?? 'not reported'}</b>{data.scanner_cvss?.version ? ` (CVSS v${data.scanner_cvss.version})` : ''} · NovaSOC NCC risk score <b className="text-foreground">{f.risk_score ?? '—'}</b> / 100, which also weighs exploitation evidence, exposure and asset criticality.</p>
+                <p className="text-foreground-muted">Scanner CVSS: <b className="text-foreground">{data.scanner_cvss?.score ?? 'not reported'}</b>{data.scanner_cvss?.version ? ` (CVSS v${data.scanner_cvss.version})` : ''} · NCC SOC risk score <b className="text-foreground">{f.risk_score ?? '—'}</b> / 100, which also weighs exploitation evidence, exposure and asset criticality.</p>
                 <p className="text-foreground-muted"><span className="font-mono">{f.asset_value}{f.port ? `:${f.port}` : ''}</span> · first seen {fmtWat(f.first_seen)} · last seen {fmtWat(f.last_seen)}{f.due_at ? ` · fix by ${fmtWat(f.due_at)}` : ''}</p>
             </div>
             {f.description && <section><h3 className="text-[11px] font-bold uppercase tracking-wide text-foreground-muted mb-1">What it is</h3><p className="whitespace-pre-wrap leading-relaxed text-foreground">{f.description}</p></section>}

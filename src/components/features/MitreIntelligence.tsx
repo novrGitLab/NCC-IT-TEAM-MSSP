@@ -9,7 +9,7 @@ import { apiUrl, apiFetch } from '@/lib/api';
 // ATT&CK techniques are real Wazuh detections, keyed on rule.mitre.id (T1055 etc.) — see
 // routes/mitre.ts on why that field and not rule.mitre.technique.
 //
-// D3FEND statuses are tri-state on purpose. Countermeasures NovaSOC NCC can verify from platform
+// D3FEND statuses are tri-state on purpose. Countermeasures NCC SOC can verify from platform
 // state report implemented/not implemented; everything else reports "unknown" and is excluded
 // from the score. A coverage percentage built from assumptions is a number a CISO would act on.
 
@@ -554,7 +554,7 @@ export function MitreIntelligence() {
                                         ))}
                                     </div>
                                     <p className="text-[10px] text-foreground-muted leading-relaxed">
-                                        These were detected but aren&apos;t in NovaSOC NCC&apos;s D3FEND mapping table yet — it
+                                        These were detected but aren&apos;t in NCC SOC&apos;s D3FEND mapping table yet — it
                                         covers a curated subset, not all of D3FEND. Absence here means unmapped, not undefended.
                                         Look them up at d3fend.mitre.org.
                                     </p>

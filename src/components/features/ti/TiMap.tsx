@@ -164,7 +164,7 @@ export function TiMap() {
                             <Field label="Published">{report.published_at ? fmtWat(report.published_at) : 'not stated'}</Field>
                             <Field label="Basis">{report.basis}</Field>
                             <Field label="Location">Nigeria (no state stated)</Field>
-                            <Field label="Attribution">{report.actors.length ? `${report.actors.join(', ')} — named by the source, not confirmed by NovaSOC NCC` : 'none stated'}</Field>
+                            <Field label="Attribution">{report.actors.length ? `${report.actors.join(', ')} — named by the source, not confirmed by NCC SOC` : 'none stated'}</Field>
                             <Field label="Source reference"><span className="font-mono">{report.source_ref}</span></Field>
                         </dl>
                         {report.sectors.length > 0 && <div><p className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted mb-1">Sectors the source tagged</p><div className="flex flex-wrap gap-1">{report.sectors.map((s) => <Tag key={s}>{s}</Tag>)}</div></div>}

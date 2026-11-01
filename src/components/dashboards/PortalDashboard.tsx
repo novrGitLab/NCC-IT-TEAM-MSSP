@@ -121,7 +121,7 @@ export const PortalDashboard = () => {
             <div>
                 <h1 className="text-lg font-black text-foreground">Welcome, {portal.orgName}</h1>
                 <p className="text-xs text-foreground-muted">
-                    Your security overview, powered by NovaSOC NCC{state.checkedAt ? ` · updated ${watTime(state.checkedAt)}` : ''}
+                    Your security overview, powered by NCC SOC{state.checkedAt ? ` · updated ${watTime(state.checkedAt)}` : ''}
                 </p>
             </div>
 

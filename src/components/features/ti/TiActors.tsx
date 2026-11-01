@@ -2,7 +2,7 @@
 
 // Threat Intelligence — Threat Actors (phase P25). Two different kinds of information, kept apart:
 //   • the reference library: profiles summarising public reporting, each with its publisher and a
-//     link — reference material, not NovaSOC NCC telemetry;
+//     link — reference material, not NCC SOC telemetry;
 //   • source mentions: MISP events that attached a threat-actor tag — the source's attribution.
 // Nothing here attributes an indicator or an incident to an actor on the platform's own authority.
 
@@ -35,7 +35,7 @@ export function TiActors() {
     return (
         <div className="space-y-5">
             <PageHeader title="Threat Actors" icon={Users}
-                description="Profiles summarising public reporting, and the actors partner sources have named in their reports. Neither is NovaSOC NCC's own attribution."
+                description="Profiles summarising public reporting, and the actors partner sources have named in their reports. Neither is NCC SOC's own attribution."
                 actions={<Segmented label="Focus" value={focus} onChange={setFocus} options={[['nigeria', 'Nigeria / West Africa'], ['global', 'Global'], ['all', 'All']] as const} />} />
 
             {load.state === 'error' ? <ErrorState error={load.error} status={load.status} onRetry={reload} /> : (

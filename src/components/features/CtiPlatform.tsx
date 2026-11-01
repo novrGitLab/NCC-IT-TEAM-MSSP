@@ -674,7 +674,7 @@ export function CtiPlatform() {
                                 {sharedMatch && (
                                     <div className="mt-3 bg-purple/10 rounded-lg p-3">
                                         <p className="text-xs text-purple font-semibold">
-                                            🔗 {sharedMatch.shared_by_clients} other NovaSOC NCC client{sharedMatch.shared_by_clients > 1 ? 's have' : ' has'} also seen this IOC
+                                            🔗 {sharedMatch.shared_by_clients} other NCC SOC client{sharedMatch.shared_by_clients > 1 ? 's have' : ' has'} also seen this IOC
                                         </p>
                                     </div>
                                 )}
@@ -922,7 +922,7 @@ export function CtiPlatform() {
             {activeTab === 'sharing' && (
                 <div className="space-y-4">
                     <div className="bg-purple/10 border border-purple/30 rounded-xl p-4">
-                        <p className="text-sm font-bold text-purple flex items-center gap-2"><Users size={16} /> {participatingClients} NovaSOC NCC clients are sharing threat intelligence</p>
+                        <p className="text-sm font-bold text-purple flex items-center gap-2"><Users size={16} /> {participatingClients} NCC SOC clients are sharing threat intelligence</p>
                         <p className="text-xs text-foreground-muted mt-1">Any IOC you mark as shared is anonymously contributed to this feed — your organisation and internal notes are stripped before it&apos;s shown to other clients.</p>
                     </div>
 
@@ -1157,7 +1157,7 @@ export function CtiPlatform() {
                             </div>
                             <label className="flex items-center gap-2 text-xs text-foreground-muted cursor-pointer">
                                 <input type="checkbox" checked={newIoc.shared} onChange={(e) => setNewIoc((n) => ({ ...n, shared: e.target.checked }))} className="accent-purple" />
-                                Share anonymously with NovaSOC NCC community
+                                Share anonymously with NCC SOC community
                             </label>
                             <button onClick={addOrgIoc} disabled={!newIoc.value.trim()} className="w-full bg-orange hover:bg-orange-hover text-white text-sm font-bold py-2.5 rounded-lg disabled:opacity-50 transition-colors">
                                 Add IOC

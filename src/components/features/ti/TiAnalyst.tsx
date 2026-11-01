@@ -1,6 +1,6 @@
 'use client';
 
-// NovaSOC NCC — AI Intelligence Analyst PREVIEW.
+// NCC SOC — AI Intelligence Analyst PREVIEW.
 //
 // Per the sprint spec: this build must not pretend to call a real model. The original NovrSOC
 // page here was a live chat (free-text question -> POST /api/ti/analyst/ask -> model answer).

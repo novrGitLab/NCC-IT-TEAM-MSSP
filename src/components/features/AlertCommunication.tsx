@@ -157,7 +157,7 @@ export function AlertCommunication() {
         return (
             <div className="bg-card border border-dashed border-border rounded-xl p-12 text-center max-w-2xl mx-auto">
                 <Mail size={30} className="text-foreground-muted mx-auto mb-3" />
-                <h1 className="font-bold text-sm text-foreground mb-1">Alert Communication is available to NovaSOC NCC analysts</h1>
+                <h1 className="font-bold text-sm text-foreground mb-1">Alert Communication is available to NCC SOC analysts</h1>
                 <p className="text-xs text-foreground-muted">Your SOC team contacts you directly when an alert needs your attention.</p>
             </div>
         );
@@ -351,17 +351,17 @@ export function AlertCommunication() {
                         <div className="p-5 space-y-3">
                             <dl className="text-xs space-y-1">
                                 <div className="flex gap-2"><dt className="w-16 text-foreground-muted">To</dt><dd className="text-foreground break-all">{resolvedRecipients.join(', ')}</dd></div>
-                                <div className="flex gap-2"><dt className="w-16 text-foreground-muted">From</dt><dd className="text-foreground">NovaSOC NCC &lt;alerts@novasoc-ncc.local&gt;</dd></div>
-                                <div className="flex gap-2"><dt className="w-16 text-foreground-muted">Subject</dt><dd className="text-foreground">[NovaSOC NCC {severity.toUpperCase()}] {subject}</dd></div>
+                                <div className="flex gap-2"><dt className="w-16 text-foreground-muted">From</dt><dd className="text-foreground">NCC SOC &lt;alerts@ncc-soc.local&gt;</dd></div>
+                                <div className="flex gap-2"><dt className="w-16 text-foreground-muted">Subject</dt><dd className="text-foreground">[NCC SOC {severity.toUpperCase()}] {subject}</dd></div>
                             </dl>
                             {/* Mirrors the HTML email the backend sends (sendAlertCommunicationEmail). */}
                             <div className="rounded-xl overflow-hidden border border-border" style={{ backgroundColor: BRAND.bg }}>
-                                <div className="px-5 py-3" style={{ backgroundColor: BRAND.purple }}><span className="text-white text-xs font-bold tracking-wide">NovaSOC NCC</span></div>
+                                <div className="px-5 py-3" style={{ backgroundColor: BRAND.purple }}><span className="text-white text-xs font-bold tracking-wide">NCC SOC</span></div>
                                 <div className="bg-white mx-3 my-3 rounded-lg p-5">
                                     <div className="flex items-center gap-2"><SeverityBadge severity={severity} />{linkedCase && <span className="text-[11px]" style={{ color: BRAND.muted }}>{linkedCase.case_number}</span>}</div>
                                     <h4 className="text-base font-bold mt-3 mb-2" style={{ color: BRAND.text }}>{subject}</h4>
                                     <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: BRAND.text }}>{body}</p>
-                                    <p className="text-[11px] mt-5" style={{ color: BRAND.muted }}>Sent by you via NovaSOC NCC</p>
+                                    <p className="text-[11px] mt-5" style={{ color: BRAND.muted }}>Sent by you via NCC SOC</p>
                                 </div>
                             </div>
 

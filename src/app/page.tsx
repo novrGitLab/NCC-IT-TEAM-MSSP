@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-// NovaSOC NCC landing page — deliberately minimal per the extraction brief: pure white
+// NCC SOC landing page — deliberately minimal per the extraction brief: pure white
 // background, centered title, a single blue Login CTA. No marketing sections.
 
 export default function Home() {
@@ -8,7 +8,7 @@ export default function Home() {
         <main className="min-h-screen bg-white flex items-center justify-center px-6">
             <div className="flex flex-col items-center text-center gap-8">
                 <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-[#0F172A]">
-                    NovaSOC NCC
+                    NCC SOC
                 </h1>
                 <Link
                     href="/login"

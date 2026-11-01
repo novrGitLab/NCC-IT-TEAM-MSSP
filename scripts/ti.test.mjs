@@ -1,6 +1,8 @@
-// Unit tests for the Threat Intelligence pages (phase P25): the Nigeria map's state outlines match
-// the states the backend can name (services/tiGeo.ts), so no hosted indicator with a known state is
-// left off the map and none is placed on a state that does not exist; freshness wording; markings.
+// Unit tests for the Threat Intelligence pages (phase P25): the Nigeria map has exactly one state
+// outline per Nigerian state (36 states + FCT), with no duplicates, so no hosted indicator with a
+// known state is left off the map and none is placed on a state that does not exist; freshness
+// wording; markings. This app is extracted standalone (no sibling `backend/` repo), so the check
+// is against the fixed, known list of Nigerian states rather than a cross-repo file.
 //
 //   npm test
 import { test } from 'node:test';
@@ -22,13 +24,20 @@ async function load(rel, name) {
 const paths = await load('components/features/ti/nigeriaPaths.ts', 'nigeriaPaths');
 const ti = await load('lib/ti.ts', 'ti');
 
-test('map: 37 state outlines, one per state, named as the backend names them', () => {
+// The canonical list of Nigeria's 36 states plus the Federal Capital Territory — a fixed,
+// real-world fact, not something that needs to come from a backend module.
+const NIGERIA_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River',
+    'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
+    'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
+    'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'Federal Capital Territory',
+];
+
+test('map: 37 state outlines, one per state, named as the real Nigerian states', () => {
     const names = paths.NIGERIA_STATE_PATHS.map((p) => (p.name === 'Nassarawa' ? 'Nasarawa' : p.name));
     assert.equal(names.length, 37);
     assert.equal(new Set(names).size, 37);
-    const backend = readFileSync(join(root, '..', 'backend', 'src', 'services', 'tiGeo.ts'), 'utf8');
-    const list = /NIGERIA_STATES = \[([\s\S]*?)\] as const/.exec(backend)[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1));
-    assert.deepEqual([...names].sort(), [...list].sort());
+    assert.deepEqual([...names].sort(), [...NIGERIA_STATES].sort());
     for (const p of paths.NIGERIA_STATE_PATHS) assert.match(p.d, /^M[\d.\s,lLmMzZcChHvV-]+$/);
     assert.equal(paths.NIGERIA_VIEWBOX, '0 0 1000 812');
 });

@@ -47,7 +47,7 @@ export function AlertFeedStatus({ notConnected, error, lastReceivedAt, loaded, s
                 <div>
                     <p className="text-sm font-semibold text-amber">No new alerts for over {staleAfterMinutes} minutes</p>
                     <p className="text-xs text-foreground-muted mt-0.5">
-                        Last alert received {watTime(lastReceivedAt)}. This organisation may simply be quiet, or the forwarder or the Wazuh manager may be down — Platform Health shows whether alerts are reaching NovaSOC NCC at all.
+                        Last alert received {watTime(lastReceivedAt)}. This organisation may simply be quiet, or the forwarder or the Wazuh manager may be down — Platform Health shows whether alerts are reaching NCC SOC at all.
                     </p>
                 </div>
             </div>

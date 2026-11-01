@@ -154,9 +154,9 @@ export function CloudAssets() {
                         <div className="flex items-start gap-4 flex-wrap">
                             <span className="text-3xl">☁️</span>
                             <div className="flex-1 min-w-[260px]">
-                                <h3 className="font-bold text-sm text-foreground mb-1">Connect AWS to NovaSOC NCC</h3>
+                                <h3 className="font-bold text-sm text-foreground mb-1">Connect AWS to NCC SOC</h3>
                                 <p className="text-xs text-foreground-muted mb-4 leading-relaxed">
-                                    NovaSOC NCC would read CloudTrail events, GuardDuty findings and EC2/S3 inventory
+                                    NCC SOC would read CloudTrail events, GuardDuty findings and EC2/S3 inventory
                                     through a read-only IAM role. No agents required.
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -238,7 +238,7 @@ export function CloudAssets() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     {[
                         { step: '01', text: 'Connect the cloud account with a read-only role.' },
-                        { step: '02', text: 'NovaSOC NCC ingests the provider’s audit log (CloudTrail, Activity Log, Cloud Audit Logs).' },
+                        { step: '02', text: 'NCC SOC ingests the provider’s audit log (CloudTrail, Activity Log, Cloud Audit Logs).' },
                         { step: '03', text: 'Findings surface in Alerts and Cases alongside endpoint detections.' },
                         { step: '04', text: 'Cloud resources appear in Digital Assets next to your agents.' },
                     ].map((s) => (

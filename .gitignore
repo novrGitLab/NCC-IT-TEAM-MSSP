@@ -16,3 +16,7 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# simulation engine persisted state (src/lib/simulation/store.ts) — runtime data, not source.
+data/*
+!data/.gitkeep

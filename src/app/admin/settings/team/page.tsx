@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { UserPlus, Search } from 'lucide-react';
 import { useTeamPresence, PresenceStats, PresenceCards, relativeTime } from '@/components/features/TeamPresence';
+import { apiUrl, apiFetch } from '@/lib/api';
 
 // Team — live status on top (heartbeat presence), then the roster. The roster used to be a
 // hardcoded mock list; it is now the real platform_users table, same layout.
@@ -25,6 +26,32 @@ export default function TeamPage() {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState<Role>('analyst');
+    const [inviteBusy, setInviteBusy] = useState(false);
+    const [inviteError, setInviteError] = useState<string | null>(null);
+    const [inviteResult, setInviteResult] = useState<{ sent: boolean; reason?: string; invite_url?: string } | null>(null);
+
+    const closeInviteModal = () => {
+        setShowInviteModal(false);
+        setInviteEmail('');
+        setInviteError(null);
+        setInviteResult(null);
+    };
+
+    const sendInvite = async () => {
+        setInviteBusy(true);
+        setInviteError(null);
+        setInviteResult(null);
+        try {
+            const res = await apiFetch(apiUrl('/api/invites'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: inviteEmail, role: inviteRole }) });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) { setInviteError(data?.error ?? `Could not send the invitation (HTTP ${res.status}).`); return; }
+            setInviteResult(data);
+        } catch {
+            setInviteError('Could not reach the server.');
+        } finally {
+            setInviteBusy(false);
+        }
+    };
 
     const members = data?.members ?? [];
     const filtered = members.filter((u) =>
@@ -147,46 +174,79 @@ export default function TeamPage() {
                     <div className="bg-card rounded-2xl shadow-xl w-full max-w-md border border-border">
                         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                             <h2 className="font-bold text-base text-foreground">Invite Team Member</h2>
-                            <button onClick={() => setShowInviteModal(false)} className="text-foreground-muted hover:text-foreground" aria-label="Close">✕</button>
+                            <button onClick={closeInviteModal} className="text-foreground-muted hover:text-foreground" aria-label="Close">✕</button>
                         </div>
                         <div className="p-6 space-y-4">
-                            <div>
-                                <label htmlFor="invite-email" className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
-                                    Email Address
-                                </label>
-                                <input
-                                    id="invite-email" type="email" value={inviteEmail}
-                                    onChange={(e) => setInviteEmail(e.target.value)}
-                                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card
-                                               focus:outline-none focus:border-purple focus:ring-2 focus:ring-purple/10"
-                                    placeholder="analyst@company.com"
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="invite-role" className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
-                                    Role
-                                </label>
-                                <select
-                                    id="invite-role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as Role)}
-                                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card focus:outline-none focus:border-purple"
-                                >
-                                    <option value="analyst">SOC Analyst — can view and action alerts</option>
-                                    <option value="soc_manager">SOC Manager — manages the team and playbooks</option>
-                                    <option value="executive">Executive — reports and posture</option>
-                                    <option value="super_admin">Super Admin — full platform access</option>
-                                </select>
-                            </div>
-                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-700">
-                                Invitations aren&apos;t connected yet — no email will be sent. Add the member to the platform_users table for now.
-                            </div>
+                            {inviteResult ? (
+                                <div className="space-y-2">
+                                    {inviteResult.sent ? (
+                                        <p className="text-sm text-foreground">Invitation sent to <strong>{inviteEmail}</strong>.</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm text-foreground">
+                                                The invitation was created, but no email could be sent{inviteResult.reason ? ` (${inviteResult.reason})` : ''}.
+                                                Share this link with {inviteEmail} directly:
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <input readOnly value={inviteResult.invite_url ?? ''} className="flex-1 border border-border rounded-lg px-3 py-2 text-xs font-mono bg-card-muted" />
+                                                <button
+                                                    onClick={() => { void navigator.clipboard.writeText(inviteResult.invite_url ?? ''); }}
+                                                    className="text-xs font-bold text-white bg-purple rounded-lg px-3 py-2 shrink-0"
+                                                >
+                                                    Copy
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label htmlFor="invite-email" className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
+                                            Email Address
+                                        </label>
+                                        <input
+                                            id="invite-email" type="email" value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card
+                                                       focus:outline-none focus:border-purple focus:ring-2 focus:ring-purple/10"
+                                            placeholder="analyst@company.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="invite-role" className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
+                                            Role
+                                        </label>
+                                        <select
+                                            id="invite-role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as Role)}
+                                            className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card focus:outline-none focus:border-purple"
+                                        >
+                                            <option value="analyst">SOC Analyst — can view and action alerts</option>
+                                            <option value="soc_manager">SOC Manager — manages the team and playbooks</option>
+                                            <option value="executive">Executive — reports and posture</option>
+                                            <option value="super_admin">Super Admin — full platform access</option>
+                                        </select>
+                                    </div>
+                                    <div className="bg-[#F1F6FF] border border-[#DBEAFE] rounded-lg p-3 text-xs text-foreground-muted">
+                                        Evaluation environment — the invited account is created in the simulation state only; no real production access is granted.
+                                    </div>
+                                    {inviteError && <p role="alert" className="text-xs text-red-500 font-semibold">{inviteError}</p>}
+                                </>
+                            )}
                         </div>
                         <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-                            <button onClick={() => setShowInviteModal(false)} className="text-sm text-foreground-muted px-4 py-2 rounded-lg hover:bg-card-muted">
+                            <button onClick={closeInviteModal} className="text-sm text-foreground-muted px-4 py-2 rounded-lg hover:bg-card-muted">
                                 Close
                             </button>
-                            <button disabled className="text-sm font-bold bg-orange text-white px-5 py-2 rounded-lg opacity-50 cursor-not-allowed">
-                                Send Invitation
-                            </button>
+                            {!inviteResult && (
+                                <button
+                                    onClick={() => void sendInvite()}
+                                    disabled={inviteBusy || !inviteEmail}
+                                    className="text-sm font-bold bg-orange hover:bg-orange-hover text-white px-5 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {inviteBusy ? 'Sending…' : 'Send Invitation'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -15,7 +15,8 @@ const GoogleLogin = dynamic(
 import { AuthField } from '@/components/auth/AuthField';
 import { NigeriaLoginMap } from '@/components/auth/NigeriaLoginMap';
 import { Logo } from '@/components/shared/Logo';
-import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from '@/lib/demo/auth';
+import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from '@/lib/authDisplay';
+import { refreshAdminUserCache } from '@/lib/admin-auth';
 
 // Read as a full static expression, not destructured — Next.js inlines NEXT_PUBLIC_* vars at
 // build time by textual substitution, so `process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED` has to
@@ -51,6 +52,7 @@ export default function AdminLoginPage() {
                 return;
             }
             localStorage.setItem('admin_token', data.token);
+            void refreshAdminUserCache();
             router.push('/admin/dashboard');
             // Deliberately NOT resetting `submitting` here (no `finally`) — router.push()
             // returns as soon as the navigation is *requested*, not once /admin/dashboard has
@@ -81,6 +83,7 @@ export default function AdminLoginPage() {
                 return;
             }
             localStorage.setItem('admin_token', data.token);
+            void refreshAdminUserCache();
             router.push('/admin/dashboard');
         } catch {
             setError('Google sign-in failed. Please try again.');
@@ -98,7 +101,7 @@ export default function AdminLoginPage() {
                 {/* Middle — form */}
                 <div className="w-full max-w-sm mx-auto">
                     <h1 className="font-black text-3xl text-foreground mb-2 tracking-tight">Welcome back</h1>
-                    <p className="text-foreground-muted text-sm mb-8">Sign in to your NovaSOC NCC workspace</p>
+                    <p className="text-foreground-muted text-sm mb-8">Sign in to your NCC SOC workspace</p>
 
                     <form onSubmit={submit} className="space-y-4">
                         <input
@@ -118,7 +121,7 @@ export default function AdminLoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             error={Boolean(error)}
-                            placeholder="you@novasoc-ncc.local"
+                            placeholder="you@ncc-soc.local"
                         />
                         <div className="relative">
                             <AuthField
@@ -157,10 +160,10 @@ export default function AdminLoginPage() {
                         </button>
                     </form>
 
-                    {/* Demo-only credentials — this build has no production backend or real
+                    {/* Evaluation credentials — this environment has no production backend or real
                         accounts; everything after sign-in is simulated. */}
                     <p className="text-foreground-muted text-xs text-center mt-4">
-                        Demo credentials: <span className="font-mono">{DEMO_ADMIN_EMAIL}</span> / <span className="font-mono">{DEMO_ADMIN_PASSWORD}</span>
+                        Evaluation credentials: <span className="font-mono">{DEMO_ADMIN_EMAIL}</span> / <span className="font-mono">{DEMO_ADMIN_PASSWORD}</span>
                     </p>
 
                     {/* Google Sign-In stays hidden unless NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true'.
@@ -195,7 +198,7 @@ export default function AdminLoginPage() {
                         Client? Access your portal at{' '}
                         <Link href="/client/login" className="text-purple hover:underline">/client/login</Link>
                     </p>
-                    <p className="text-grey-300 text-xs mt-2">NovaSOC NCC — demonstration edition</p>
+                    <p className="text-grey-300 text-xs mt-2">NCC SOC — demonstration edition</p>
                 </div>
             </div>
 

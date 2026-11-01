@@ -134,8 +134,9 @@ export const ADMIN_NAV: NavSectionConfig[] = [
     },
 ];
 
-// Client portal. Every item is BROKEN at the portal level: portal sign-in depends on the
-// unreachable APP_API_BASE_URL backend, so no customer can reach these pages today.
+// Client portal. Status labels below reflect each page's own data completeness, not a shared
+// backend outage — the portal signs in and reads data through the same local API surface as the
+// admin app (src/lib/api.ts).
 export const CLIENT_NAV: NavSectionConfig[] = [
     {
         section: '', collapsible: false,

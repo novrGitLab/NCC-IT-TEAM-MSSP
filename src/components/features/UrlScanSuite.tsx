@@ -148,7 +148,7 @@ export function UrlScanSuite() {
 
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-foreground-muted">
                             <span>Try:</span>
-                            {['http://malware.testing.google.test/testing/malware/', 'https://novasoc-ncc.local'].map((ex) => (
+                            {['http://malware.testing.google.test/testing/malware/', 'https://ncc-soc.local'].map((ex) => (
                                 <button key={ex} onClick={() => setUrl(ex)} className="font-mono hover:text-blue transition-colors truncate max-w-[220px]">
                                     {ex}
                                 </button>

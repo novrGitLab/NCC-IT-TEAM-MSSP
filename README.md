@@ -1,4 +1,4 @@
-# NovaSOC NCC
+# NCC SOC
 
 A standalone, client-facing demonstration edition of NovrSOC. Frontend-only: every page is served
 from local simulated data (`src/lib/demo/`), and nothing in this app calls a production backend,

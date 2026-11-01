@@ -35,7 +35,7 @@ export async function exportPageAsPDF(
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('NovaSOC NCC', 10, 13);
+    pdf.text('NCC SOC', 10, 13);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
     pdf.text(`${title} Report`, 35, 13);
@@ -72,7 +72,7 @@ export async function exportPageAsPDF(
     pdf.rect(0, pageHeight - 10, pageWidth, 10, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(7);
-    pdf.text('Confidential — NovaSOC NCC (demonstration)', 10, pageHeight - 3);
+    pdf.text('Confidential — NCC SOC (demonstration)', 10, pageHeight - 3);
 
     pdf.save(`${filename}-${new Date().toISOString().split('T')[0]}.pdf`);
 }
@@ -95,7 +95,7 @@ export function exportDataAsPDF(
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('NovaSOC NCC', 10, 12);
+    pdf.text('NCC SOC', 10, 12);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.text(title, 10, 20);
@@ -139,7 +139,7 @@ export function exportDataAsPDF(
     pdf.rect(0, 287, pageWidth, 10, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(7);
-    pdf.text('Confidential — NovaSOC NCC (demonstration)', pageWidth / 2, 293, { align: 'center' });
+    pdf.text('Confidential — NCC SOC (demonstration)', pageWidth / 2, 293, { align: 'center' });
 
     pdf.save(`${filename}-${new Date().toISOString().split('T')[0]}.pdf`);
 }

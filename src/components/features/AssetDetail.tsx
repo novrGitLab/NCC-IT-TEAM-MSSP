@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Server, ShieldAlert, Package, Siren, Network, ClipboardCheck } from 'lucide-react';
 import { apiUrl, apiFetch } from '@/lib/api';
 
-// Asset detail — everything NovaSOC NCC knows about one Wazuh agent.
+// Asset detail — everything NCC SOC knows about one Wazuh agent.
 //
 // Each tab is backed by a different system, which is why they load independently rather than in
 // one request: the agent record and packages come from the Wazuh Manager REST API, while

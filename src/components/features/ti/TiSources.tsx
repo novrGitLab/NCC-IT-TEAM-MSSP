@@ -293,7 +293,7 @@ export function TiSources() {
 
             URL.revokeObjectURL(url);
 
-            if (result.headers.get('X-NovaSOC NCC-Truncated') === 'true') {
+            if (result.headers.get('X-NCC SOC-Truncated') === 'true') {
                 setMsg({
                     ok: true,
                     text: 'The bundle holds the first 5,000 objects; use TAXII for the full collection.',
@@ -631,7 +631,7 @@ export function TiSources() {
                                         : 'not configured (MISP_URL, MISP_API_KEY)'}
                                 </Field>
 
-                                <Field label="Writes from NovaSOC NCC">
+                                <Field label="Writes from NCC SOC">
                                     {d.misp.writes_enabled ? (
                                         <span className="text-orange font-semibold">
                                             enabled

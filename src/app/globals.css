@@ -5,8 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* ---- NovaSOC NCC brand palette — white/blue only, fixed, do not change per theme ----
-     2026-10-31: rebranded from Cybernovr's purple/orange palette for the NovaSOC NCC
+  /* ---- NCC SOC brand palette — white/blue only, fixed, do not change per theme ----
+     2026-10-31: rebranded from Cybernovr's purple/orange palette for the NCC SOC
      demonstration edition. Purple and orange are retired as brand colors — every former
      purple/orange accent now resolves to the primary or dark blue below. Red stays reserved
      for destructive/critical actions only. */
@@ -32,9 +32,9 @@
   --brand-warning: #F59E0B;
 
   /* ---- Semantic tokens — flip between light/dark. Light is the default theme. ----
-     Values below are the NovaSOC NCC white/blue system: white app background, a light
+     Values below are the NCC SOC white/blue system: white app background, a light
      blue-tinted secondary surface, near-black primary text, slate secondary text, and a
-     light blue border — per the NovaSOC NCC brand spec. */
+     light blue border — per the NCC SOC brand spec. */
   --surface: #FFFFFF;
   --card: var(--brand-white);
   --card-muted: #F1F6FF;
@@ -125,7 +125,7 @@
   --color-foreground: var(--foreground);
   --color-foreground-muted: var(--foreground-muted);
 
-  /* NovaSOC NCC rebrand (2026-10-31): a handful of components use Tailwind's built-in
+  /* NCC SOC rebrand (2026-10-31): a handful of components use Tailwind's built-in
      numbered purple- and orange- scale directly (e.g. bg-purple-700, text-orange-500) rather
      than the brand-token aliases above. Overriding those scale steps here, instead of
      editing every such component, retires purple and orange everywhere per the no-pink-or-

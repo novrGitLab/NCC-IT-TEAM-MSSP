@@ -23,8 +23,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NovaSOC NCC",
-  description: "NovaSOC NCC — standalone client-facing demonstration edition",
+  title: "NCC SOC",
+  description: "NCC SOC — evaluation environment. Telemetry and response actions are simulated; no external assets are connected.",
   // Favicon comes from the src/app/icon.svg file-convention instead — no explicit override here.
 };
 

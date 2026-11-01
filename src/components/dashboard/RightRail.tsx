@@ -19,7 +19,7 @@ interface AccountSummary {
 }
 
 function useAccountSummary(portal: 'admin' | 'client'): AccountSummary {
-    const [summary, setSummary] = useState<AccountSummary>({ organisation: 'NovaSOC NCC', plan: 'Enterprise', role: '—' });
+    const [summary, setSummary] = useState<AccountSummary>({ organisation: 'NCC SOC', plan: 'Enterprise', role: '—' });
 
     useEffect(() => {
         if (portal === 'admin') {

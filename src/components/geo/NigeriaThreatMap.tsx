@@ -162,10 +162,10 @@ export const NigeriaThreatMap = () => {
                             <SectionHeader title="Nigeria National Threat Landscape" />
                             {data?.demo_data && (
                                 <span
-                                    title="Rows written by a since-removed demo seeder are still in the database. They are cleared automatically when the collector writes real counts."
+                                    title="Rows written by a since-removed seeder are still in the database. They are cleared automatically when the collector writes real counts."
                                     className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 uppercase"
                                 >
-                                    Demonstration data
+                                    Simulated data
                                 </span>
                             )}
                         </div>
@@ -231,7 +231,7 @@ export const NigeriaThreatMap = () => {
                         <div className="flex items-center justify-between mb-3">
                             <div>
                                 <p className="text-xs font-semibold tracking-widest text-foreground uppercase">Live Attack Map</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">Inbound attacks targeting NovaSOC NCC-protected clients</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Inbound attacks targeting NCC SOC-protected clients</p>
                             </div>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <div className="flex items-center gap-0.5 bg-muted border border-border rounded-lg p-0.5 mr-1">

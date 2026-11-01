@@ -452,7 +452,7 @@ export function CaseWorkbench() {
         return (
             <div className="bg-card border border-dashed border-border rounded-xl p-12 text-center max-w-2xl mx-auto">
                 <Briefcase size={32} className="text-foreground-muted mx-auto mb-3" />
-                <h1 className="font-bold text-sm text-foreground mb-1">Cases are available to NovaSOC NCC analysts</h1>
+                <h1 className="font-bold text-sm text-foreground mb-1">Cases are available to NCC SOC analysts</h1>
                 <p className="text-xs text-foreground-muted">
                     Case records hold the SOC&apos;s investigation detail. Your SOC team shares case reports with you directly; sign in with an analyst account to work cases here.
                 </p>

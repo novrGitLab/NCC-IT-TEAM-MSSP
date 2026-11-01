@@ -1,6 +1,6 @@
 'use client';
 
-import { NovaSOCLogo } from '@/components/shared/NovaSOCLogo';
+import { NccSocLogo } from '@/components/shared/NccSocLogo';
 import { cn } from '@/lib/utils';
 
 type ServiceStatus = 'operational' | 'degraded' | 'outage' | 'maintenance';
@@ -36,9 +36,9 @@ export default function StatusPage() {
         <div className="min-h-screen bg-grey-50">
             <header className="bg-white border-b border-grey-100">
                 <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <NovaSOCLogo />
+                    <NccSocLogo />
                     <a href="/" className="text-sm text-grey-500 hover:text-blue transition-colors">
-                        ← Back to NovaSOC NCC
+                        ← Back to NCC SOC
                     </a>
                 </div>
             </header>
@@ -102,7 +102,7 @@ export default function StatusPage() {
                     </div>
                 </div>
 
-                <p className="text-center text-xs text-grey-500">NovaSOC NCC Status Page (demonstration)</p>
+                <p className="text-center text-xs text-grey-500">NCC SOC Status Page (demonstration)</p>
             </main>
         </div>
     );

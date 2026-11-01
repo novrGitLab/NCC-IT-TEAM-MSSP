@@ -148,7 +148,7 @@ function StepRow({ playbookId, playbookName, stepId, info, agents }: {
                         </div>
                     ) : (
                         <p className="text-[11px] text-foreground-muted mt-1.5">
-                            {CASE_ONLY[stepId] ?? 'Not connected — NovaSOC NCC has no automated action for this step yet; do it manually.'}
+                            {CASE_ONLY[stepId] ?? 'Not connected — NCC SOC has no automated action for this step yet; do it manually.'}
                         </p>
                     )}
                 </div>

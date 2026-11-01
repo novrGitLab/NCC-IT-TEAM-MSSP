@@ -62,7 +62,7 @@ function CollectorWalkthrough() {
             <div className="flex items-center justify-between gap-2">
                 <div className="font-bold text-sm text-foreground">Collector Deployment Walkthrough</div>
                 <span className="text-[10px] font-bold uppercase tracking-wide text-amber bg-amber/10 border border-amber/30 rounded-full px-2.5 py-1">
-                    Demonstration workflow — no infrastructure connected
+                    Simulated workflow — no infrastructure connected
                 </span>
             </div>
 

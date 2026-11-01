@@ -1,4 +1,4 @@
-// NovaSOC NCC — DEMONSTRATION FIXTURE. Sample cases/incidents for the retained SecOps pages
+// NCC SOC — DEMONSTRATION FIXTURE. Sample cases/incidents for the retained SecOps pages
 // (/api/cases and friends). Tied to DEMO_ALERTS' case_id values where applicable.
 
 const now = Date.now();

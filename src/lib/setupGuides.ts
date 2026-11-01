@@ -36,7 +36,7 @@ export const GUIDES: Record<GuideId, Guide> = {
     opnsense: {
         title: 'OPNsense Setup',
         subtitle: 'Network · Connect the perimeter firewall',
-        intro: 'OPNsense firewall events reach NovaSOC NCC through the Wazuh manager in one of two ways. Syslog (remote logging over WireGuard to the manager on UDP 514) arrives as the manager itself: map the firewall sender address to its organisation in Settings → Wazuh Groups → Syslog sources, or its alerts stay quarantined. Or enrol it as an agent with the os-wazuh-agent plugin (steps below) and put the agent in a group mapped to the organisation. NovaSOC NCC blocks IPs through the OPNsense API either way.',
+        intro: 'OPNsense firewall events reach NCC SOC through the Wazuh manager in one of two ways. Syslog (remote logging over WireGuard to the manager on UDP 514) arrives as the manager itself: map the firewall sender address to its organisation in Settings → Wazuh Groups → Syslog sources, or its alerts stay quarantined. Or enrol it as an agent with the os-wazuh-agent plugin (steps below) and put the agent in a group mapped to the organisation. NCC SOC blocks IPs through the OPNsense API either way.',
         matchAgents: (agents) => {
             const fw = findFirewallAgent(agents);
             return fw ? [fw] : [];
@@ -50,7 +50,7 @@ export const GUIDES: Record<GuideId, Guide> = {
             },
             {
                 title: 'Point the agent at the manager',
-                body: 'Services → Wazuh Agent → Settings: enable the agent, set the manager address below, and name the agent so NovaSOC NCC recognises it as the firewall. Save and apply. The firewall must be able to reach the manager on TCP 1514 (events) and 1515 (enrolment).',
+                body: 'Services → Wazuh Agent → Settings: enable the agent, set the manager address below, and name the agent so NCC SOC recognises it as the firewall. Save and apply. The firewall must be able to reach the manager on TCP 1514 (events) and 1515 (enrolment).',
                 code: 'Manager hostname:  {{MANAGER}}\nAgent name:        opnsense-fw',
                 lang: 'text',
             },
@@ -59,13 +59,13 @@ export const GUIDES: Record<GuideId, Guide> = {
                 body: 'In the same plugin, enable forwarding of the firewall (filter) log. If Suricata runs on this box, go to Services → Intrusion Detection → Administration, enable IDS, select your rulesets (e.g. ET open), and tick "Enable eve syslog output" so its alerts reach the agent.',
             },
             {
-                title: 'Create the block list NovaSOC NCC writes to',
+                title: 'Create the block list NCC SOC writes to',
                 body: 'Firewall → Aliases: add an alias named novrsoc_blocked of type Host(s), leave it empty, and apply. Then add a rule on the WAN interface that blocks source novrsoc_blocked, placed above your allow rules. The "Block IP" response action and the SOAR engine add attacker IPs to this alias.',
                 code: 'Name:  novrsoc_blocked\nType:  Host(s)',
                 lang: 'text',
             },
             {
-                title: 'Create an API key for NovaSOC NCC',
+                title: 'Create an API key for NCC SOC',
                 body: 'System → Access → Users: create a dedicated user (e.g. novrsoc-api) with only the Firewall: Alias: Edit privilege, then press + under API keys. A key/secret file downloads. Set these on Railway (and in soar.env on the manager). The URL must be reachable from Railway; a private address such as 192.168.x.x is not.',
                 code: 'OPNSENSE_URL=https://<firewall-public-address>\nOPNSENSE_KEY=<key from the file>\nOPNSENSE_SECRET=<secret from the file>\nOPNSENSE_ALIAS=novrsoc_blocked',
                 lang: 'bash',

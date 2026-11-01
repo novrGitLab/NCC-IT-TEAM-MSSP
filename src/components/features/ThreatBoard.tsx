@@ -59,7 +59,7 @@ export function ThreatBoard() {
                 const d = await res.json().catch(() => null);
                 if (!active) return;
                 if (!res.ok || !d) {
-                    setLoaded({ key, threats: [], summary: null, store: '', checkedAt: d?.checked_at ?? new Date().toISOString(), error: res.status === 401 ? 'Sign in with a NovaSOC NCC analyst account to view threats.' : d?.error ?? `HTTP ${res.status}` });
+                    setLoaded({ key, threats: [], summary: null, store: '', checkedAt: d?.checked_at ?? new Date().toISOString(), error: res.status === 401 ? 'Sign in with a NCC SOC analyst account to view threats.' : d?.error ?? `HTTP ${res.status}` });
                     return;
                 }
                 setLoaded({ key, threats: d.threats ?? [], summary: d.summary ?? null, store: d.store, checkedAt: d.checked_at });

@@ -1,4 +1,4 @@
-// NovaSOC NCC — DEMONSTRATION FIXTURE. Shaped to match StoredAlert / AlertStats
+// NCC SOC — DEMONSTRATION FIXTURE. Shaped to match StoredAlert / AlertStats
 // (src/lib/alerts.ts) so the retained SecOps alert pages render unmodified. Typed (not `as const`)
 // so an acknowledge/escalate button can mutate `status`/`case_id` in place for a real local effect
 // instead of a response that claims success while nothing changed.
