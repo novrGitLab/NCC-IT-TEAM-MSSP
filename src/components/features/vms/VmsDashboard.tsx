@@ -62,9 +62,14 @@ const STATUS_SLICES = [
 const ENGINE_TONE: Record<EngineState, Tone> = { available: 'good', offline: 'warning', not_enabled: 'neutral', not_installed: 'critical', no_worker: 'critical' };
 const CRIT = ['critical', 'high', 'medium', 'low'] as const;
 
+interface PostureSummary { total_assets: number; by_posture: Record<'secure' | 'monitored' | 'at_risk' | 'critical', number>; trend: { day: string; events: number }[] }
+const POSTURE_LABEL: Record<string, string> = { secure: 'Secure', monitored: 'Monitored', at_risk: 'At risk', critical: 'Critical' };
+const POSTURE_TOKEN: Record<string, Series['token']> = { secure: '--vz-good', monitored: '--vz-neutral', at_risk: '--vz-warning', critical: '--vz-critical' };
+
 export function VmsDashboard() {
     const [days, setDays] = useState<'7' | '30' | '90'>('30');
     const { load, data: d, reload, at } = useVmsData<Dashboard>(`/api/vms/dashboard?days=${days}`);
+    const posture = useVmsData<PostureSummary>('/api/posture/summary');
     const can = useVmsCan();
     const loading = load.state === 'loading' && !d;
     const k = d?.kpis;
@@ -82,7 +87,7 @@ export function VmsDashboard() {
             />
             {/* Quick actions: each goes to the working flow; the backend checks the permission there. */}
             <div className="flex flex-wrap gap-2">
-                <Link href="/admin/vms/discovery" className={btn('secondary', 'md')}><Plus className="w-4 h-4" aria-hidden /> Add asset</Link>
+                <Link href="/admin/onboarding/collectors" className={btn('secondary', 'md')}><Plus className="w-4 h-4" aria-hidden /> Add asset</Link>
                 <Link href="/admin/vms/scans" className={btn('primary', 'md')}><ScanSearch className="w-4 h-4" aria-hidden /> Start authorised scan</Link>
                 <Link href="/admin/vms/findings?severity=critical" className={btn('secondary', 'md')}><AlertOctagon className="w-4 h-4" aria-hidden /> View critical findings</Link>
                 <Link href="/admin/vms/report" className={btn('secondary', 'md')}><FileBarChart className="w-4 h-4" aria-hidden /> Generate report</Link>
@@ -129,6 +134,10 @@ export function VmsDashboard() {
                 </ChartCard>
                 <ChartCard title="Finding status" hint="Every finding on record, by lifecycle state." loading={loading} empty={d && !Object.values(d.charts.status).some(Boolean) ? { title: 'No findings on record' } : null}>
                     {d && <Donut label="Findings by status" centerLabel="findings" size={150} slices={STATUS_SLICES.map(([key, label, token]) => ({ key, label, token, value: d.charts.status[key] ?? 0 }))} />}
+                </ChartCard>
+                <ChartCard title="Security posture" hint="Portfolio-level posture, derived from each asset's open findings — never generated independently of them." loading={posture.load.state === 'loading' && !posture.data}
+                    empty={posture.data && !posture.data.total_assets ? { title: 'No assets yet' } : null}>
+                    {posture.data && <Donut label="Assets by security posture" centerLabel="assets" size={150} slices={(['secure', 'monitored', 'at_risk', 'critical'] as const).map((k) => ({ key: k, label: POSTURE_LABEL[k], token: POSTURE_TOKEN[k], value: posture.data!.by_posture[k] ?? 0, href: '/admin/vms/assets' }))} />}
                 </ChartCard>
                 <ChartCard title="Critical exposure trend" hint="Daily snapshots of open findings that matter most from outside." loading={loading}
                     empty={d && d.charts.exposure.length < 2 ? { title: 'Not enough history yet', body: 'A trend needs at least two daily snapshots; one is taken each day. Critical exposures are recorded from the P20 update onward.' } : null}>
@@ -196,7 +205,7 @@ export function VmsDashboard() {
                         </div>
                     ))}
                 </ListCard>
-                <ListCard title="Scanner health" hint={d ? `Workers: ${d.worker_presence.state === 'online' ? `${d.worker_presence.online_workers} online` : d.worker_presence.state === 'never' ? 'none has connected' : `offline, last seen ${fmtWat(d.worker_presence.last_seen_at)}`}` : undefined} href={can.scope ? '/admin/vms/operations/workers' : undefined} loading={loading} empty={!d?.engines.length ? 'No scan engines known' : null}>
+                <ListCard title="Scanner health" hint={d ? `Workers: ${d.worker_presence.state === 'online' ? `${d.worker_presence.online_workers} online` : d.worker_presence.state === 'never' ? 'none has connected' : `offline, last seen ${fmtWat(d.worker_presence.last_seen_at)}`}` : undefined} loading={loading} empty={!d?.engines.length ? 'No scan engines known' : null}>
                     {d?.engines.map((e) => (
                         <div key={e.id} className="flex items-start justify-between gap-3 py-2.5">
                             <span className="min-w-0"><span className="block text-xs font-semibold text-foreground">{e.label}</span><span className="block text-[11px] text-foreground-muted">{e.note}{e.versions.length ? ` · ${e.versions.join(', ')}` : ''}</span></span>

@@ -183,21 +183,27 @@ function useEscape(open: boolean, onClose: () => void) {
     }, [open, onClose]);
 }
 /** Side panel for a record's detail. Escape or the backdrop closes it; focus moves into it. */
-export function Drawer({ open, onClose, title, subtitle, children, width = 'max-w-2xl' }: { open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode; children: ReactNode; width?: string }) {
+export function Drawer({ open, onClose, title, subtitle, children, footer, width = 'max-w-2xl' }: { open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode; width?: string }) {
     useEscape(open, onClose);
     const ref = useRef<HTMLDivElement>(null);
     const id = useId();
     useEffect(() => { if (open) ref.current?.focus(); }, [open]);
     if (!open) return null;
     return (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        // z-[60], matching ConfirmDialog below — z-50 collided with the floating HelpAssistant
+        // widget (also z-50, fixed bottom-right on every admin page), which could sit on top of
+        // and intercept clicks on a drawer's own content.
+        <div className="fixed inset-0 z-[60] flex justify-end">
             <div className="absolute inset-0 bg-black/40 motion-safe:animate-[vzfade_200ms_ease-out]" onClick={onClose} aria-hidden />
             <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={id} className={`relative h-full w-full ${width} bg-surface border-l border-border shadow-2xl flex flex-col outline-none`}>
-                <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-card">
+                <div className="shrink-0 flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-card">
                     <div className="min-w-0"><h2 id={id} className="text-base font-black text-foreground break-words">{title}</h2>{subtitle && <div className="text-[11px] text-foreground-muted mt-0.5">{subtitle}</div>}</div>
                     <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg text-foreground-muted hover:bg-card-muted hover:text-foreground"><X className="w-4 h-4" /></button>
                 </div>
+                {/* Only this middle section scrolls — header and footer (if given) stay fixed, so
+                    a multi-step form's actions are never scrolled out of view. */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-5">{children}</div>
+                {footer && <div className="shrink-0 border-t border-border bg-card px-5 py-4">{footer}</div>}
             </div>
         </div>
     );

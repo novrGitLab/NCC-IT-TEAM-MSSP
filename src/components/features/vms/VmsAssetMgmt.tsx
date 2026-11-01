@@ -14,7 +14,7 @@ import {
     type VmsAsset, type VmsService, type VmsTech, type VmsEvent, type VmsAssessment, type VmsScan,
 } from '@/lib/vms';
 import { AiPanel } from '@/components/shared/AiPanel';
-import { Card, SectionTitle, StatusPill, SegmentBar } from './ui';
+import { Card, SectionTitle, StatusPill, SegmentBar, type Tone } from './ui';
 import { PageHeader, KpiCard, RiskScore, PriorityBadge, SeverityBadge, Segmented, Select, SearchBox, ErrorState, Notice, EmptyState, ExportCsvButton, ConfirmDialog, Timeline, Tag, btn, relTime, nf, type Msg, SEVERITY_META } from './kit';
 import { ChartCard, BarList, Donut } from './charts';
 import { DataTable, type Column } from './table';
@@ -79,7 +79,7 @@ export function VmsAssetInventory() {
             <PageHeader icon={Boxes} title="Asset Inventory" description="Every host, domain and IP found inside authorised scope, and every Wazuh-managed endpoint — one inventory, with each asset's open findings and highest risk."
                 actions={<>
                     <Segmented label="View" value={view} onChange={setView} options={[['all', 'All assets'], ['endpoints', 'Managed endpoints (Wazuh)']]} />
-                    <Link href="/admin/vms/discovery" className={btn('secondary')}><Plus className="w-3.5 h-3.5" aria-hidden /> Add asset</Link>
+                    <Link href="/admin/onboarding/collectors" className={btn('secondary')}><Plus className="w-3.5 h-3.5" aria-hidden /> Add asset</Link>
                 </>} />
             {view === 'endpoints' ? <VmsEndpoints /> : (
                 <>
@@ -93,7 +93,7 @@ export function VmsAssetInventory() {
                     </div>
                     {load.state === 'error' ? <ErrorState error={load.error} status={load.status} onRetry={reload} />
                         : <DataTable caption="Asset inventory" rows={rows} columns={columns} rowKey={(a) => a.id} onRowClick={(a) => router.push(`/admin/vms/assets/${a.id}`)} initialSort={{ key: 'findings', dir: 'desc' }}
-                            empty={<EmptyState icon={Boxes} title={data?.assets.length ? 'No assets match these filters' : 'No assets yet'} body={data?.assets.length ? undefined : 'Add an authorised scope and run discovery, or map Wazuh agent groups to this organisation.'} action={data?.assets.length ? undefined : <Link href="/admin/vms/discovery" className={btn('primary', 'md')}>Go to Asset Discovery</Link>} />} />}
+                            empty={<EmptyState icon={Boxes} title={data?.assets.length ? 'No assets match these filters' : 'No assets yet'} body={data?.assets.length ? undefined : 'Add a collector to discover assets automatically.'} action={data?.assets.length ? undefined : <Link href="/admin/onboarding/collectors" className={btn('primary', 'md')}>Go to Collector Management</Link>} />} />}
                     {data && data.assets.length >= 1000 && <p className="text-[11px] text-foreground-muted">Showing the 1000 most recently seen assets. Use the filters or search to find others.</p>}
                 </>
             )}
@@ -102,15 +102,21 @@ export function VmsAssetInventory() {
 }
 
 // ── Asset page ─────────────────────────────────────────────────────────────────────────────────
+interface PostureEvent { id: string; at: string; eventType: string; previousPosture: string | null; newPosture: string; explanation: string }
+const POSTURE_TONE: Record<string, Tone> = { secure: 'good', monitored: 'neutral', at_risk: 'warning', critical: 'critical' };
+const POSTURE_LABEL: Record<string, string> = { secure: 'Secure', monitored: 'Monitored', at_risk: 'At risk', critical: 'Critical' };
+
 export function VmsAssetPage({ id }: { id: string }) {
     const can = useVmsCan();
     const router = useRouter();
     const { load, data, reload, at } = useVmsData<AssetDetail>(`/api/vms/assets/${id}`);
     const findings = useVmsData<{ findings: Finding[] }>(`/api/vms/findings?status=all&asset_id=${id}`);
     const assessments = useVmsData<{ assessments: VmsAssessment[] }>(`/api/vms/assessments?asset_id=${id}`);
+    const posture = useVmsData<{ posture: string; events: PostureEvent[] }>(`/api/posture/${id}`);
     const [tab, setTab] = useState<'overview' | 'findings' | 'services' | 'assessments' | 'history'>('overview');
     const [msg, setMsg] = useState<Msg>(null);
     const [assess, setAssess] = useState(false);
+    const [scanning, setScanning] = useState(false);
     const now = at ?? 0;
     if (load.state === 'error') return <div className="space-y-4"><Link href="/admin/vms/assets" className={btn('ghost')}><ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Asset Inventory</Link><ErrorState error={load.error} status={load.status} onRetry={reload} /></div>;
     if (!data) return <div className="space-y-4"><div className="h-16 rounded-2xl bg-card-muted motion-safe:animate-pulse" /><div className="h-64 rounded-2xl bg-card-muted motion-safe:animate-pulse" /></div>;
@@ -122,6 +128,14 @@ export function VmsAssetPage({ id }: { id: string }) {
         setMsg(r.ok ? { ok: true, text: 'Saved' } : { ok: false, text: r.error });
         if (r.ok) reload();
     }
+    async function runOnboardingScan() {
+        setScanning(true);
+        const r = await vmsSend('POST', `/api/vms/assets/${a.id}/onboarding-scan`);
+        setScanning(false);
+        setMsg(r.ok ? { ok: true, text: 'Scan queued — findings will appear automatically once the simulation clock advances it.' } : { ok: false, text: r.error });
+        if (r.ok) { findings.reload(); posture.reload(); }
+    }
+    const collectorSource = a.discovery_sources.find((s) => s.startsWith('collector:'));
     const findingCols: Column<Finding>[] = [
         { key: 'priority', header: 'Priority', sort: (f) => f.priority ?? 'P9', render: (f) => <PriorityBadge priority={f.priority} /> },
         { key: 'title', header: 'Finding', className: 'min-w-[220px]', render: (f) => <div><p className="font-semibold text-foreground">{f.title}</p><p className="text-[10.5px] text-foreground-muted">{f.cve_ids.slice(0, 2).join(', ') || f.rule_id}{f.port ? ` · port ${f.port}` : ''}</p></div> },
@@ -186,6 +200,19 @@ export function VmsAssetPage({ id }: { id: string }) {
                         <Link href={`/admin/vms/findings?asset_id=${a.id}`} className="block mt-3 text-[11px] font-semibold text-purple dark:text-[var(--vz-prog-4)]">Open in Vulnerability Findings →</Link>
                     </Card>
                     <Card className="xl:col-span-2"><SectionTitle title="Attack-surface map" hint="Relationships from stored records, each labelled confirmed, observed or inferred." /><AttackSurfaceMap assetId={a.id} onOpenAsset={(x) => router.push(`/admin/vms/assets/${x}`)} /></Card>
+                    <Card>
+                        <SectionTitle title="Security posture" hint="Derived from this asset's open findings — never set independently of them." />
+                        {posture.data ? (
+                            <div className="space-y-3">
+                                <StatusPill tone={POSTURE_TONE[posture.data.posture] ?? 'neutral'} label={POSTURE_LABEL[posture.data.posture] ?? posture.data.posture} />
+                                {collectorSource && <p className="text-[11px] text-foreground-muted">Discovered by <Link href="/admin/onboarding/collectors" className="font-mono text-purple dark:text-[var(--vz-prog-4)]">{collectorSource.replace('collector:', '')}</Link></p>}
+                                {open.length === 0 && (
+                                    <button onClick={() => void runOnboardingScan()} disabled={scanning} className={btn('secondary', 'md')}>{scanning ? 'Queuing…' : 'Run a scan on this asset'}</button>
+                                )}
+                                <Timeline empty="No posture history yet." items={posture.data.events.slice(0, 8).map((e) => ({ id: e.id, at: e.at, title: e.eventType.replace(/_/g, ' '), meta: fmtWat(e.at).replace(/,? \d\d:\d\d WAT$/, ''), body: e.explanation, tone: e.eventType === 'remediation_completed' || e.eventType === 'patch_verified' ? 'good' : e.eventType === 'vulnerability_identified' ? 'warning' : undefined }))} />
+                            </div>
+                        ) : <div className="h-24 rounded-xl bg-card-muted motion-safe:animate-pulse" />}
+                    </Card>
                     <div><AiPanel key={a.id} purpose="asset_assessment" subjectId={a.id} title="AI exposure assessment (draft — review before acting)" /></div>
                 </div>
             )}

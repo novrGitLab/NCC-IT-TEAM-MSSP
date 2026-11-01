@@ -21,9 +21,9 @@ import {
     Crosshair, AlertTriangle, Link as LinkIcon, Server, Network, ShieldCheck, Radar,
     ShieldAlert, Activity, Zap, Siren,
     BarChart, Settings, BookOpen, FileText, ScrollText,
-    ClipboardCheck, Map, Radio, Cloud, Bell, Monitor,
+    ClipboardCheck, Radio, Bell, Monitor, Boxes,
     Target, Fingerprint, CalendarRange,
-    Sparkles, Rocket,
+    Sparkles,
     type LucideIcon,
 } from 'lucide-react';
 import type { NavGroup, NavItem, NavRole } from '@/components/layout/Sidebar';
@@ -66,15 +66,16 @@ export const ADMIN_NAV: NavSectionConfig[] = [
     {
         section: 'Overview', collapsible: true, icon: LayoutDashboard, groupLabel: 'Overview',
         items: [
-            { id: 'dashboard', label: 'Dashboard', href: '/admin/dashboard', domain: 'overview', status: 'PARTIAL', roles: 'all', icon: LayoutDashboard },
-            { id: 'executive-report', label: 'Executive Report', href: '/admin/dashboard/executive', domain: 'overview', status: 'WORKING', roles: MANAGER_PLUS_EXEC, icon: FileBarChart },
+            { id: 'executive-report', label: 'Executive Dashboard', href: '/admin/dashboard/executive', domain: 'overview', status: 'WORKING', roles: MANAGER_PLUS_EXEC, icon: FileBarChart },
+            { id: 'dashboard', label: 'Security Overview', href: '/admin/dashboard', domain: 'overview', status: 'PARTIAL', roles: 'all', icon: LayoutDashboard },
+            { id: 'reports', label: 'Reports', href: '/admin/vms/report', domain: 'overview', status: 'WORKING', roles: VMS_READ, icon: FileBarChart },
         ],
     },
     {
         // executive: hidden. Sec Ops Management is manager-only.
         section: 'Security Operations', collapsible: true, icon: Activity, groupLabel: 'Security Operations',
         items: [
-            { id: 'cases', label: 'Cases', href: '/admin/secops/cases', domain: 'secops', status: 'WORKING', roles: NOT_EXEC, icon: FileText },
+            { id: 'cases', label: 'Incidents', href: '/admin/secops/cases', domain: 'secops', status: 'WORKING', roles: NOT_EXEC, icon: FileText },
             { id: 'alerts', label: 'Alerts', href: '/admin/secops/alerts', domain: 'secops', status: 'PARTIAL', roles: NOT_EXEC, icon: Bell },
             { id: 'threats', label: 'Threats', href: '/admin/secops/threats', domain: 'secops', status: 'WORKING', roles: NOT_EXEC, icon: ShieldAlert },
             { id: 'mitre', label: 'MITRE Intelligence', href: '/admin/secops/mitre', domain: 'secops', status: 'PARTIAL', roles: NOT_EXEC, icon: Shield },
@@ -83,7 +84,7 @@ export const ADMIN_NAV: NavSectionConfig[] = [
             { id: 'response-approvals', label: 'Response Approvals', href: '/admin/secops/approvals', domain: 'secops', status: 'WORKING', roles: NOT_EXEC, icon: ShieldCheck },
             { id: 'weekly-insights', label: 'Weekly Insights', href: '/admin/secops/insights', domain: 'secops', status: 'WORKING', roles: NOT_EXEC, icon: CalendarRange },
             { id: 'security-assessment', label: 'Security Assessment', href: '/admin/secops/security-assessment', domain: 'secops', status: 'WORKING', roles: MANAGER_PLUS_EXEC, icon: ClipboardCheck },
-            { id: 'secops-management', label: 'Sec Ops Management', href: '/admin/secops/management', domain: 'secops', status: 'PARTIAL', roles: MANAGER_ONLY, icon: Settings },
+            { id: 'secops-management', label: 'SOC Management', href: '/admin/secops/management', domain: 'secops', status: 'PARTIAL', roles: MANAGER_ONLY, icon: Settings },
         ],
     },
     {
@@ -94,42 +95,33 @@ export const ADMIN_NAV: NavSectionConfig[] = [
         items: VMS_SECTIONS.map((s): NavItemConfig => ({ id: `vms-${s.id}`, label: s.label, href: s.href, domain: 'vms', status: 'WORKING', roles: s.managerOnly ? MANAGER_ONLY : VMS_READ, icon: s.icon, match: s.pages.map((p) => p.href).filter((h) => h !== '/admin/vms') })),
     },
     {
-        // Threat Intelligence V1 (P25): eight pages. The external IOC lookup and the URL & web
-        // scanner are tools linked from Indicators & Investigation; the older pages redirect here.
+        // Threat Intelligence: Indicators, Threat Actors, Advisories/Vulnerabilities, AI analyst,
+        // Sources & Exchange. The external IOC lookup and the URL & web scanner are tools linked
+        // from Indicators & Investigation; the older pages redirect here.
         section: 'Threat Intelligence', collapsible: true, icon: Crosshair, groupLabel: 'Threat Intelligence',
         items: [
-            { id: 'ti-overview', label: 'Overview', href: '/admin/ti', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Crosshair },
-            { id: 'ti-map', label: 'Nigeria Threat Map', href: '/admin/ti/map', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Map },
-            { id: 'ti-indicators', label: 'Indicators & Investigation', href: '/admin/ti/indicators', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Fingerprint, match: ['/admin/threat/cti', '/admin/threat/urlscan', '/admin/threat/webscan'] },
+            { id: 'ti-overview', label: 'Threat Overview', href: '/admin/ti', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Crosshair },
+            { id: 'ti-indicators', label: 'Indicators', href: '/admin/ti/indicators', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Fingerprint, match: ['/admin/threat/cti', '/admin/threat/urlscan', '/admin/threat/webscan'] },
             { id: 'ti-actors', label: 'Threat Actors', href: '/admin/ti/actors', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Users },
             { id: 'ti-matches', label: 'Organisation Matches', href: '/admin/ti/matches', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Target },
-            { id: 'ti-vulnerabilities', label: 'Vulnerabilities & Advisories', href: '/admin/ti/vulnerabilities', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: ShieldAlert },
+            { id: 'ti-vulnerabilities', label: 'Advisories & Vulnerabilities', href: '/admin/ti/vulnerabilities', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: ShieldAlert },
             { id: 'ti-analyst', label: 'AI Intelligence Analyst', href: '/admin/ti/analyst', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Sparkles },
             { id: 'ti-sources', label: 'Sources & Exchange', href: '/admin/ti/sources', domain: 'threat-intel', status: 'WORKING', roles: VMS_READ, icon: Radio },
         ],
     },
     {
-        section: 'Infrastructure & Assets', collapsible: true, icon: Server, groupLabel: 'Infrastructure & Assets',
+        section: 'Asset & Collector Management', collapsible: true, icon: Boxes, groupLabel: 'Asset & Collector Management',
         items: [
-            // Unified inventory (P14): Wazuh-managed and external assets, one record set (VMS Attack Surface).
             { id: 'infra-inventory', label: 'Asset Inventory', href: '/admin/vms/assets', domain: 'infra', status: 'WORKING', roles: VMS_READ, icon: Server },
-            { id: 'digital-assets', label: 'Wazuh Endpoints', href: '/admin/infra/assets', domain: 'infra', status: 'WORKING', roles: NOT_EXEC, icon: Monitor },
-            { id: 'cloud-assets', label: 'Cloud Assets', href: '/admin/infra/cloud', domain: 'infra', status: 'PARTIAL', roles: NOT_EXEC, icon: Cloud },
+            { id: 'onboarding-collectors', label: 'Collector Management', href: '/admin/onboarding/collectors', domain: 'infra', status: 'WORKING', roles: MANAGER_PLUS_EXEC, icon: Radio },
         ],
     },
     {
-        section: 'Onboarding', collapsible: true, icon: Rocket, groupLabel: 'Onboarding',
-        items: [
-            { id: 'onboarding-new', label: 'Collector Onboarding', href: '/admin/onboarding/new', domain: 'infra', status: 'WORKING', roles: MANAGER_PLUS_EXEC, icon: Rocket },
-        ],
-    },
-    {
-        section: 'Settings', collapsible: true, icon: Settings, groupLabel: 'Settings',
+        section: 'Administration', collapsible: true, icon: Settings, groupLabel: 'Administration',
         items: [
             { id: 'team', label: 'Team', href: '/admin/settings/team', domain: 'settings', status: 'WORKING', roles: SUPER_ADMIN, icon: Users },
-            { id: 'analytics', label: 'Analytics', href: '/admin/settings/analytics', domain: 'settings', status: 'WORKING', roles: SUPER_ADMIN, icon: BarChart },
+            { id: 'analytics', label: 'Organization Settings', href: '/admin/settings/analytics', domain: 'settings', status: 'WORKING', roles: SUPER_ADMIN, icon: BarChart },
             { id: 'audit-log', label: 'Audit Log', href: '/admin/settings/audit', domain: 'settings', status: 'PARTIAL', roles: SUPER_ADMIN, icon: ScrollText },
-            { id: 'platform-health', label: 'Platform Health', href: '/admin/settings/health', domain: 'settings', status: 'WORKING', roles: MANAGER_ONLY, icon: Activity },
         ],
     },
 ];

@@ -37,7 +37,58 @@ export interface InviteRecord {
     createdAt: string; expiresAt: string; acceptedAt: string | null;
 }
 
-export interface OrgRecord { id: string; name: string; domain: string; industry: string; plan: string; wazuh_group?: string; }
+export interface OrgFramework { framework: string; enabled: boolean; initialScore: number }
+
+export interface OrgRecord {
+    id: string; name: string; domain: string; industry: string; plan: string; wazuh_group?: string;
+    businessUnits: string[]; infrastructureCategories: string[];
+    country?: string; address?: string;
+    contactName?: string; contactEmail?: string; contactPhone?: string; cisoName?: string; cisoEmail?: string;
+    frameworks: OrgFramework[];
+    onboardingStep: number; onboardingComplete: boolean;
+    createdAt: string; updatedAt: string;
+}
+
+export type CollectorKind = 'endpoint' | 'network_telemetry' | 'api_connector' | 'log_forwarding' | 'agentless' | 'vuln_assessment';
+export type CollectorInfraCategory = 'servers' | 'middleware' | 'cloud' | 'endpoints' | 'dev_workstations' | 'network' | 'firewall';
+export type CollectorStatus = 'created' | 'configuring' | 'connecting' | 'validating' | 'collecting' | 'operational' | 'paused' | 'error';
+
+export interface CollectorStatusEvent { at: string; status: CollectorStatus; note?: string }
+
+export interface CollectorRecord {
+    id: string; name: string;
+    collectorKind: CollectorKind; infraCategory: CollectorInfraCategory;
+    orgId: string; businessUnit: string; assetScope: string;
+    collectionIntervalMinutes: number;
+    status: CollectorStatus; statusHistory: CollectorStatusEvent[];
+    lastHeartbeat: string | null; lastSync: string | null;
+    assetsDiscovered: number; eventsCollected: number;
+    health: 'healthy' | 'degraded' | 'down';
+    errorMessage: string | null;
+    createdAt: string;
+}
+
+export interface IngestionEventRecord {
+    id: string; collectorId: string; at: string;
+    assetCategory: string; eventType: string;
+    processingState: 'received' | 'normalized' | 'applied';
+    normalizedFields: Record<string, unknown>;
+    assetId: string | null;
+}
+
+export type PostureEventType = 'asset_discovered' | 'vulnerability_identified' | 'criticality_changed' | 'threat_correlated' | 'remediation_completed' | 'patch_verified';
+
+export interface PostureEventRecord {
+    id: string; at: string; assetId: string; assetValue: string;
+    eventType: PostureEventType; previousPosture: string | null; newPosture: string; explanation: string;
+}
+
+export interface AiDiagnosticResult {
+    verifiedModel: string | null;
+    verifiedAt: string | null;
+    lastError: string | null;
+    modelsTried: string[];
+}
 
 export interface AuditEntry { id: string; at: string; actor: string; action: string; details?: Record<string, unknown>; }
 
@@ -74,6 +125,9 @@ export interface SimState {
 
     // Onboarding
     organisations: OrgRecord[];
+    collectors: CollectorRecord[];
+    ingestionEvents: IngestionEventRecord[];
+    postureEvents: PostureEventRecord[];
 
     // Auth
     users: UserRecord[];
@@ -82,6 +136,7 @@ export interface SimState {
 
     // AI analyst output (src/lib/simulation/ai/analyst.ts)
     aiArtifacts: AiArtifactRecord[];
+    aiDiagnostic: AiDiagnosticResult;
 
     auditLog: AuditEntry[];
 }

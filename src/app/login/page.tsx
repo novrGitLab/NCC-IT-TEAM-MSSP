@@ -198,7 +198,6 @@ export default function AdminLoginPage() {
                         Client? Access your portal at{' '}
                         <Link href="/client/login" className="text-purple hover:underline">/client/login</Link>
                     </p>
-                    <p className="text-grey-300 text-xs mt-2">NCC SOC — demonstration edition</p>
                 </div>
             </div>
 

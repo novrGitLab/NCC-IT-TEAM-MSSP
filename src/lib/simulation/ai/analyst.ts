@@ -3,12 +3,11 @@
 // engine (or the still-unported demo fixtures, for subject types not yet migrated) and is
 // instructed never to invent facts beyond what it was given. User-triggered only — nothing here
 // runs on a timer or on every page render.
-import { getAssetDetail, findingDetail, findingsForAsset, getRisk } from '../engine';
+import { getAiDiagnostic, getAssetDetail, findingDetail, findingsForAsset, getRisk } from '../engine';
 import { byAlertId } from '@/lib/demo/alerts';
 import { DEMO_CASES } from '@/lib/demo/incidents';
 import { DEMO_TI_MATCHES, DEMO_TI_ACTORS } from '@/lib/demo/threats';
 import { DEMO_WEEKLY_INSIGHTS, DEMO_REPORTS } from '@/lib/demo/reports';
-import { getNigeriaThreatsResponse } from '@/lib/demo/nigeria';
 
 const NVIDIA_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -39,7 +38,7 @@ export interface Subject { label: string; data: unknown }
 export const PURPOSE_TO_SUBJECT_TYPE: Record<string, string> = {
     alert_summary: 'alert', case_summary: 'case', case_handover: 'case', incident_report: 'case',
     finding_explanation: 'finding', remediation_plan: 'finding', rescan_interpretation: 'finding', asset_assessment: 'asset',
-    indicator_assessment: 'indicator', threat_briefing: 'report', weekly_insights: 'report', nigeria_briefing: 'report', investigation_summary: 'indicator',
+    indicator_assessment: 'indicator', threat_briefing: 'report', weekly_insights: 'report', investigation_summary: 'indicator',
 };
 
 /** Resolves a (subjectType, subjectId) pair to real records the model may cite. Never invented. */
@@ -73,7 +72,6 @@ export function resolveSubject(subjectType: string, subjectId: string): Subject 
         }
         case 'report': {
             if (subjectId === 'weekly-insights') return { label: 'Weekly insights', data: DEMO_WEEKLY_INSIGHTS };
-            if (subjectId === 'nigeria-briefing') return { label: 'Nigeria threat briefing', data: getNigeriaThreatsResponse() };
             const report = DEMO_REPORTS.find((r) => r.id === subjectId);
             return report ? { label: report.title, data: report } : null;
         }
@@ -95,7 +93,6 @@ const PURPOSE_INSTRUCTIONS: Record<string, string> = {
     investigation_summary: 'Summarize the investigation status of this indicator. Output JSON: {"summary": string, "confidence": string}.',
     threat_briefing: 'Write a brief threat summary from this report data. Output JSON: {"summary": string, "key_points": string[]}.',
     weekly_insights: 'Summarize this week\'s security insights. Output JSON: {"summary": string, "key_points": string[]}.',
-    nigeria_briefing: 'Summarize this regional threat data. Output JSON: {"summary": string, "key_points": string[]}.',
 };
 
 function buildMessages(purpose: string, subject: Subject): { role: string; content: string }[] {
@@ -134,7 +131,10 @@ function parseModelJson(raw: string): Record<string, unknown> {
 
 export async function generate(purpose: string, subject: Subject): Promise<{ content: Record<string, unknown>; model: string }> {
     const apiKey = process.env.NVIDIA_API_KEY;
-    const model = process.env.NVIDIA_MODEL;
+    // Prefer the model the diagnostic (src/lib/simulation/ai/diagnostic.ts) actually verified
+    // works on this account over the raw env var, which may be stale or invalid — additive only,
+    // falls back to NVIDIA_MODEL unchanged when no diagnostic has run yet.
+    const model = getAiDiagnostic().verifiedModel ?? process.env.NVIDIA_MODEL;
     if (!apiKey || !model) throw new AiNotAvailableError('AI is not configured in this environment.');
 
     const controller = new AbortController();

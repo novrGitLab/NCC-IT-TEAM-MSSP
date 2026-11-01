@@ -4,8 +4,38 @@
 import { randomUUID, randomBytes } from 'node:crypto';
 import { loadState, saveState } from './store';
 import { hashPassword } from './auth/users';
-import type { AiArtifactRecord, FindingRecord, FindingStatus, InviteRecord, SimState, TaskRecord, UserRecord, UserRole } from './types';
-import type { VmsAsset } from '@/lib/vms';
+import type { AiArtifactRecord, AiDiagnosticResult, CollectorInfraCategory, CollectorKind, CollectorRecord, CollectorStatus, FindingRecord, FindingStatus, IngestionEventRecord, InviteRecord, OrgRecord, PostureEventRecord, PostureEventType, SimState, TaskRecord, UserRecord, UserRole } from './types';
+import type { VmsAsset, VmsScan } from '@/lib/vms';
+
+export type PostureLabel = 'secure' | 'monitored' | 'at_risk' | 'critical';
+
+/** Pure: posture label from an already-filtered open-findings list — usable against either the
+ *  committed state or an in-flight saveState() draft. */
+function postureFromOpenFindings(open: FindingRecord[]): PostureLabel {
+    if (open.some((f) => f.scanner_severity === 'critical')) return 'critical';
+    if (open.some((f) => f.scanner_severity === 'high')) return 'at_risk';
+    if (open.length > 0) return 'monitored';
+    return 'secure';
+}
+
+/** Current posture label for one asset, derived fresh from its open findings — never stored as a
+ *  cached field that could drift from the findings backing it. Reads the committed state; inside
+ *  a saveState() mutator, compute the post-mutation value from `draft.findings` directly instead. */
+export function computeAssetPosture(assetId: string): PostureLabel {
+    return postureFromOpenFindings(loadState().findings.filter((f) => f.asset_id === assetId && !CLOSED.includes(f.status)));
+}
+
+function postureOf(findings: FindingRecord[], assetId: string): PostureLabel {
+    return postureFromOpenFindings(findings.filter((f) => f.asset_id === assetId && !CLOSED.includes(f.status)));
+}
+
+/** Appends a posture event to an in-flight mutation draft — called from inside other saveState()
+ *  mutators (patchAsset, patchFinding, the scheduler), never on its own, so one disk write covers
+ *  both the underlying change and the posture record it produced. */
+export function pushPostureEvent(draft: SimState, assetId: string, assetValue: string, eventType: PostureEventType, previousPosture: string | null, newPosture: string, explanation: string): void {
+    const record: PostureEventRecord = { id: randomUUID(), at: new Date().toISOString(), assetId, assetValue, eventType, previousPosture, newPosture, explanation };
+    draft.postureEvents.push(record);
+}
 
 const CLOSED: FindingStatus[] = ['verified', 'risk_accepted', 'false_positive'];
 const isOverdueFinding = (f: FindingRecord, now: number) => !!f.due_at && Date.parse(f.due_at) < now && !CLOSED.includes(f.status);
@@ -38,7 +68,11 @@ export async function patchAsset(id: string, changes: { owner?: string; critical
         const a = draft.assets.find((x) => x.id === id);
         if (!a) return;
         if (typeof changes.owner === 'string') a.owner = changes.owner;
-        if (changes.criticality) a.criticality = changes.criticality;
+        if (changes.criticality && changes.criticality !== a.criticality) {
+            const posture = postureOf(draft.findings, a.id);
+            pushPostureEvent(draft, a.id, a.value, 'criticality_changed', posture, posture, `Business criticality changed from ${a.criticality} to ${changes.criticality}.`);
+            a.criticality = changes.criticality;
+        }
         updated = a;
     });
     return updated;
@@ -100,7 +134,20 @@ export async function patchFinding(id: string, changes: Partial<Pick<FindingReco
     await saveState((draft) => {
         const f = draft.findings.find((x) => x.id === id);
         if (!f) return;
-        if (changes.status !== undefined) { f.status = changes.status; if (changes.status === 'verified') f.verified_at = new Date().toISOString(); }
+        if (changes.status !== undefined && changes.status !== f.status) {
+            const assetId = f.asset_id;
+            if (assetId) {
+                const before = postureOf(draft.findings, assetId);
+                f.status = changes.status;
+                if (changes.status === 'verified') f.verified_at = new Date().toISOString();
+                const after = postureOf(draft.findings, assetId);
+                if (changes.status === 'verified') pushPostureEvent(draft, assetId, f.asset_value, 'remediation_completed', before, after, `Finding "${f.title}" marked verified — remediation confirmed.`);
+                else if (before !== after) pushPostureEvent(draft, assetId, f.asset_value, 'remediation_completed', before, after, `Finding "${f.title}" status changed to ${changes.status}.`);
+            } else {
+                f.status = changes.status;
+                if (changes.status === 'verified') f.verified_at = new Date().toISOString();
+            }
+        }
         if (changes.owner !== undefined) f.owner = changes.owner;
         if (changes.due_at !== undefined) f.due_at = changes.due_at;
         f.last_seen = new Date().toISOString();
@@ -256,13 +303,13 @@ export function listUsers(): Omit<UserRecord, 'passwordHash'>[] {
     return loadState().users.filter((u) => u.role !== 'portal_user').map(({ passwordHash: _unused, ...rest }) => rest);
 }
 
-export async function createInvite(email: string, role: UserRole, invitedBy: string): Promise<InviteRecord> {
+export async function createInvite(email: string, role: UserRole, invitedBy: string, orgId: string | null = null): Promise<InviteRecord> {
     const invite: InviteRecord = {
         // 32 random bytes, base64url — 43 characters, matching set-password/page.tsx's token regex.
         token: randomBytes(32).toString('base64url'),
         email: email.trim().toLowerCase(),
         role,
-        orgId: null,
+        orgId,
         invitedBy,
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
@@ -298,4 +345,187 @@ export async function acceptInvite(token: string, password: string, name: string
         live.acceptedAt = new Date().toISOString();
     });
     return user;
+}
+
+// --- Organisations / onboarding (src/app/api/organisations/**) ----------------------------------
+
+export function listOrganisations(): OrgRecord[] {
+    return loadState().organisations;
+}
+
+export function getOrganisation(id: string): OrgRecord | null {
+    return loadState().organisations.find((o) => o.id === id) ?? null;
+}
+
+export async function createOrganisation(input: { name: string; domain: string; industry?: string; plan?: string; country?: string; address?: string; contactName?: string; contactEmail?: string; contactPhone?: string; cisoName?: string; cisoEmail?: string; businessUnits?: string[] }): Promise<OrgRecord> {
+    const now = new Date().toISOString();
+    const org: OrgRecord = {
+        id: randomUUID(), name: input.name, domain: input.domain, industry: input.industry ?? '', plan: input.plan ?? 'starter',
+        country: input.country, address: input.address, contactName: input.contactName, contactEmail: input.contactEmail, contactPhone: input.contactPhone, cisoName: input.cisoName, cisoEmail: input.cisoEmail,
+        businessUnits: input.businessUnits ?? [], infrastructureCategories: [], frameworks: [], onboardingStep: 1, onboardingComplete: false,
+        createdAt: now, updatedAt: now,
+    };
+    await saveState((draft) => { draft.organisations.push(org); });
+    return org;
+}
+
+export async function updateOrganisation(id: string, patch: Partial<Omit<OrgRecord, 'id' | 'createdAt'>>): Promise<OrgRecord | null> {
+    let updated: OrgRecord | null = null;
+    await saveState((draft) => {
+        const o = draft.organisations.find((x) => x.id === id);
+        if (!o) return;
+        Object.assign(o, patch, { updatedAt: new Date().toISOString() });
+        updated = o;
+    });
+    return updated;
+}
+
+// --- Collectors (src/app/api/collectors/**) ------------------------------------------------------
+
+export const COLLECTOR_LIFECYCLE: CollectorStatus[] = ['created', 'configuring', 'connecting', 'validating', 'collecting', 'operational'];
+
+export function listCollectors(orgId?: string): CollectorRecord[] {
+    const collectors = loadState().collectors;
+    return orgId ? collectors.filter((c) => c.orgId === orgId) : collectors;
+}
+
+export function getCollector(id: string): CollectorRecord | null {
+    return loadState().collectors.find((c) => c.id === id) ?? null;
+}
+
+export async function createCollector(input: { name: string; collectorKind: CollectorKind; infraCategory: CollectorInfraCategory; orgId: string; businessUnit: string; assetScope: string; collectionIntervalMinutes: number }): Promise<CollectorRecord> {
+    const now = new Date().toISOString();
+    const collector: CollectorRecord = {
+        id: randomUUID(), name: input.name, collectorKind: input.collectorKind, infraCategory: input.infraCategory,
+        orgId: input.orgId, businessUnit: input.businessUnit, assetScope: input.assetScope, collectionIntervalMinutes: input.collectionIntervalMinutes,
+        status: 'created', statusHistory: [{ at: now, status: 'created' }],
+        lastHeartbeat: null, lastSync: null, assetsDiscovered: 0, eventsCollected: 0, health: 'healthy', errorMessage: null, createdAt: now,
+    };
+    await saveState((draft) => { draft.collectors.push(collector); });
+    return collector;
+}
+
+/** Pause an active collector (scheduler skips paused collectors); resume re-enters the lifecycle
+ *  where it left off, or retries from 'connecting' if it stopped on an error. */
+export async function pauseCollector(id: string): Promise<CollectorRecord | null> {
+    let updated: CollectorRecord | null = null;
+    await saveState((draft) => {
+        const c = draft.collectors.find((x) => x.id === id);
+        if (!c || c.status === 'paused') return;
+        c.status = 'paused';
+        c.statusHistory.push({ at: new Date().toISOString(), status: 'paused' });
+        updated = c;
+    });
+    return updated;
+}
+
+export async function resumeCollector(id: string): Promise<CollectorRecord | null> {
+    let updated: CollectorRecord | null = null;
+    await saveState((draft) => {
+        const c = draft.collectors.find((x) => x.id === id);
+        if (!c) return;
+        const next: CollectorStatus = c.status === 'error' || c.status === 'paused' ? 'connecting' : c.status;
+        c.status = next;
+        c.errorMessage = null;
+        c.statusHistory.push({ at: new Date().toISOString(), status: next, note: 'Resumed by administrator' });
+        updated = c;
+    });
+    return updated;
+}
+
+export async function removeCollector(id: string): Promise<boolean> {
+    let removed = false;
+    await saveState((draft) => {
+        const before = draft.collectors.length;
+        draft.collectors = draft.collectors.filter((c) => c.id !== id);
+        removed = draft.collectors.length < before;
+    });
+    return removed;
+}
+
+export function listIngestionEvents(collectorId?: string): IngestionEventRecord[] {
+    const events = loadState().ingestionEvents;
+    return (collectorId ? events.filter((e) => e.collectorId === collectorId) : events).slice(-200).reverse();
+}
+
+// --- Posture (src/app/api/posture/**) --------------------------------------------------------
+
+export function listPostureEvents(assetId?: string): PostureEventRecord[] {
+    const events = loadState().postureEvents;
+    return (assetId ? events.filter((e) => e.assetId === assetId) : events).slice(-500).reverse();
+}
+
+export function getPostureSummary() {
+    const state = loadState();
+    const byLabel: Record<PostureLabel, number> = { secure: 0, monitored: 0, at_risk: 0, critical: 0 };
+    for (const a of state.assets) byLabel[computeAssetPosture(a.id)]++;
+
+    const days = 14;
+    const dayKey = (iso: string) => iso.slice(0, 10);
+    const today = Date.now();
+    const trend = Array.from({ length: days }, (_, i) => {
+        const day = new Date(today - (days - 1 - i) * 86_400_000).toISOString().slice(0, 10);
+        const dayEvents = state.postureEvents.filter((e) => dayKey(e.at) === day);
+        const byType: Record<string, number> = {};
+        for (const e of dayEvents) byType[e.eventType] = (byType[e.eventType] ?? 0) + 1;
+        return { day, events: dayEvents.length, by_type: byType };
+    });
+
+    return { total_assets: state.assets.length, by_posture: byLabel, trend, recent_events: listPostureEvents().slice(0, 20) };
+}
+
+// --- Asset-targeted scan (onboarding scenario — src/app/api/vms/assets/[id]/onboarding-scan) ----
+
+const FINDING_TEMPLATES: Record<string, { title: string; finding_type: string; severity: FindingRecord['scanner_severity']; cvss: number; rule_id: string; description: string; remediation: string; patch_available: boolean }> = {
+    host: { title: 'Outdated OS packages with known vulnerabilities', finding_type: 'vulnerability', severity: 'high', cvss: 7.4, rule_id: 'outdated-os-packages', description: 'The onboarding scan found multiple OS packages behind current security patch levels.', remediation: 'Patch available — apply the vendor security updates during the next maintenance window.', patch_available: true },
+    endpoint: { title: 'Endpoint protection agent reporting stale signatures', finding_type: 'misconfiguration', severity: 'medium', cvss: 5.0, rule_id: 'stale-av-signatures', description: 'The onboarding scan found the endpoint agent has not updated its detection signatures recently.', remediation: 'No vendor patch available yet — force a signature update from the endpoint console.', patch_available: false },
+    ip: { title: 'Default management credentials reachable', finding_type: 'exposure', severity: 'critical', cvss: 9.1, rule_id: 'default-mgmt-credentials', description: 'The onboarding scan found a management interface still reachable with vendor-default credentials.', remediation: 'Patch available — rotate the credentials immediately and restrict management-plane access.', patch_available: true },
+    domain: { title: 'TLS configuration allows weak cipher suites', finding_type: 'misconfiguration', severity: 'medium', cvss: 5.3, rule_id: 'weak-tls-onboarding', description: 'The onboarding scan found the web service accepts outdated TLS cipher suites.', remediation: 'Patch available — disable TLS 1.0/1.1 and legacy ciphers in the TLS profile.', patch_available: true },
+};
+
+export async function startAssetScan(assetId: string): Promise<VmsScan | null> {
+    const asset = getAsset(assetId);
+    if (!asset) return null;
+    const scan: VmsScan = {
+        id: `scan-onb-${randomUUID()}`, scope_id: 'onboarding', kind: 'vuln_nuclei', targets: [asset.value], options: {},
+        status: 'queued', requested_by: 'Onboarding workflow', requested_at: new Date().toISOString(), started_at: null, finished_at: null,
+        progress: {}, error: null, summary: null, worker_id: null, heartbeat_at: null, cancel_requested: false,
+        purpose: 'asset_onboarding', target_asset_id: assetId,
+    };
+    await saveState((draft) => { draft.scans.push(scan); });
+    return scan;
+}
+
+/** Called by the scheduler once an onboarding scan succeeds — generates exactly one deterministic
+ *  finding per asset (never duplicated: a no-op if the asset already has an onboarding finding). */
+export function completeOnboardingScan(draft: SimState, scan: VmsScan): void {
+    const assetId = scan.target_asset_id;
+    if (!assetId) return;
+    const asset = draft.assets.find((a) => a.id === assetId);
+    if (!asset) return;
+    const findingId = `find-onb-${assetId}`;
+    if (draft.findings.some((f) => f.id === findingId)) return; // already generated — scans don't duplicate findings
+    const template = FINDING_TEMPLATES[asset.asset_type] ?? FINDING_TEMPLATES.host;
+    const now = new Date().toISOString();
+    const before = postureOf(draft.findings, assetId);
+    const finding: FindingRecord = {
+        id: findingId, asset_id: assetId, asset_value: asset.value, port: null, protocol: null,
+        source_class: 'active_scan', detected_by: ['vuln_nuclei'], rule_id: template.rule_id, title: template.title, finding_type: template.finding_type,
+        cve_ids: [], scanner_severity: template.severity, scanner_cvss: template.cvss, risk_score: Math.round(template.cvss * 10),
+        priority: template.severity === 'critical' ? 'P1' : template.severity === 'high' ? 'P2' : 'P3', status: 'open', owner: null, due_at: null,
+        first_seen: now, last_seen: now, verified_at: null, case_id: null, description: template.description, remediation: template.remediation, patch_available: template.patch_available,
+    };
+    draft.findings.push(finding);
+    const after = postureOf(draft.findings, assetId);
+    pushPostureEvent(draft, assetId, asset.value, 'vulnerability_identified', before, after, `Onboarding scan found "${finding.title}" (${finding.scanner_severity}).`);
+}
+
+// --- AI model diagnostic (src/lib/simulation/ai/diagnostic.ts) -----------------------------------
+
+export function getAiDiagnostic(): AiDiagnosticResult {
+    return loadState().aiDiagnostic;
+}
+
+export async function setAiDiagnostic(result: AiDiagnosticResult): Promise<void> {
+    await saveState((draft) => { draft.aiDiagnostic = result; });
 }

@@ -25,7 +25,7 @@ mkdirSync(cacheDir, { recursive: true });
 // Node ESM can resolve them without a bundler. assets.ts/vulnerabilities.ts/auth.ts were migrated
 // to src/lib/simulation/ (real route handlers + engine.ts now serve those paths — see
 // scripts/simulation-engine.test.mjs) and no longer exist here.
-const files = ['alerts.ts', 'incidents.ts', 'threats.ts', 'reports.ts', 'collectors.ts', 'nigeria.ts', 'router.ts'];
+const files = ['alerts.ts', 'incidents.ts', 'threats.ts', 'reports.ts', 'collectors.ts', 'router.ts'];
 for (const file of files) {
     const srcPath = join(srcDir, file);
     const out = ts.transpileModule(readFileSync(srcPath, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: srcPath });
@@ -36,21 +36,27 @@ const { demoRespond } = await import(pathToFileURL(join(cacheDir, 'router.mjs'))
 
 const get = (path, query = new URLSearchParams()) => demoRespond('GET', path, query, undefined);
 
-test('Nigeria threat map: summary exists so `data?.summary.error` never throws', () => {
-    const { status, data } = get('/api/dashboard/nigeria-threats');
-    assert.equal(status, 200);
-    assert.ok(data.summary, 'summary must exist');
-    assert.ok(Array.isArray(data.states));
-    assert.equal(typeof data.summary.states_affected, 'number');
-    assert.equal(data.summary.states_affected, data.states.filter((s) => s.threats > 0).length, 'states_affected must match the states array, not drift from it');
-});
-
 test('VMS operations: queue exists so `ops.data?.queue.queued` never throws', () => {
     const { status, data } = get('/api/vms/operations');
     assert.equal(status, 200);
     assert.ok(data.queue, 'queue must exist');
     assert.equal(typeof data.queue.queued, 'number');
     assert.ok(Array.isArray(data.engines));
+});
+
+test('TI actors: notes/source_named/aliases exist so `data.notes.map` never throws', () => {
+    const { status, data } = get('/api/ti/actors');
+    assert.equal(status, 200);
+    assert.ok(Array.isArray(data.notes), 'notes must be an array');
+    assert.ok(Array.isArray(data.source_named), 'source_named must be an array');
+    assert.ok(Array.isArray(data.actors) && data.actors.length > 0);
+    for (const a of data.actors) {
+        assert.ok(Array.isArray(a.aliases));
+        assert.ok(Array.isArray(a.targeted_sectors));
+        assert.ok(Array.isArray(a.known_incidents));
+        assert.ok(Array.isArray(a.techniques));
+        assert.ok(a.source_mentions && Array.isArray(a.source_mentions.reports));
+    }
 });
 
 test('TI overview: indicators and matches exist so `ov.data?.indicators.active`/`matches.new` never throw', () => {

@@ -4,18 +4,33 @@
 // local/`next start` target for this evaluation build) — it does NOT coordinate across multiple
 // server instances or survive an ephemeral/serverless filesystem. That is a known limitation of
 // this evaluation deployment, not something this file tries to solve.
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+//
+// The in-memory cache lives on `globalThis`, not a plain module-level variable — Next.js's dev
+// server (and instrumentation.ts specifically, which runs in a separate compilation layer from
+// route handlers) can load this file as more than one module instance within the same process.
+// A plain `let cached` would then give the scheduler and the route handlers each their own
+// snapshot, silently diverging (confirmed live: the scheduler kept ticking a stale pre-creation
+// snapshot and overwriting newer collectors' progress on disk every tick). `globalThis` is the
+// one thing every module instance in the same process actually shares.
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { isAbsolute, join, resolve } from 'node:path';
 import { buildDefaultState } from './scenarios';
 import type { SimState } from './types';
 import { SIM_STATE_VERSION } from './types';
 
-const DATA_DIR = join(process.cwd(), 'data');
+// SIM_DATA_DIR lets a one-off verification/test process point at its own scratch directory
+// instead of the real data/ dir a long-running dev or prod server already owns — otherwise two
+// server processes started against the same project directory would fight over one file. Unset
+// in normal use; defaults to data/ under the project root exactly as before.
+const DATA_DIR = process.env.SIM_DATA_DIR
+    ? (isAbsolute(process.env.SIM_DATA_DIR) ? process.env.SIM_DATA_DIR : resolve(process.cwd(), process.env.SIM_DATA_DIR))
+    : join(process.cwd(), 'data');
 const STATE_FILE = join(DATA_DIR, 'simulation-state.json');
 const TMP_FILE = join(DATA_DIR, 'simulation-state.json.tmp');
 
-let cached: SimState | null = null;
-let writeQueue: Promise<void> = Promise.resolve();
+interface GlobalCache { cached: SimState | null; cachedMtimeMs: number; writeQueue: Promise<void> }
+const g = globalThis as typeof globalThis & { __nccSocSimStore?: GlobalCache };
+const store: GlobalCache = g.__nccSocSimStore ?? (g.__nccSocSimStore = { cached: null, cachedMtimeMs: 0, writeQueue: Promise.resolve() });
 
 function ensureDataDir(): void {
     if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
@@ -25,7 +40,7 @@ function ensureDataDir(): void {
 function assertValidState(state: unknown): state is SimState {
     if (!state || typeof state !== 'object') throw new Error('Invalid simulation state: not an object');
     const s = state as Record<string, unknown>;
-    const requiredArrays = ['assets', 'findings', 'scans', 'extraTasks', 'organisations', 'users', 'sessions', 'invites', 'auditLog', 'events', 'aiArtifacts'];
+    const requiredArrays = ['assets', 'findings', 'scans', 'extraTasks', 'organisations', 'collectors', 'ingestionEvents', 'postureEvents', 'users', 'sessions', 'invites', 'auditLog', 'events', 'aiArtifacts'];
     for (const key of requiredArrays) {
         if (!Array.isArray(s[key])) throw new Error(`Invalid simulation state: ${key} must be an array`);
     }
@@ -46,42 +61,48 @@ function readFromDisk(): SimState | null {
     }
 }
 
-function writeToDisk(state: SimState): void {
+function writeToDisk(state: SimState): number {
     ensureDataDir();
     writeFileSync(TMP_FILE, JSON.stringify(state));
     renameSync(TMP_FILE, STATE_FILE); // atomic on the same filesystem, Windows NTFS and POSIX alike
+    return statSync(STATE_FILE).mtimeMs;
 }
 
-/** Synchronous read of the current state, seeding on first access. */
+/** Synchronous read of the current state, seeding on first access. Re-reads from disk whenever
+ *  the file's mtime has moved past what this cache last saw — the defensive half of the
+ *  globalThis fix above, covering any write that didn't go through this exact module instance's
+ *  saveState() (e.g. a differently-bundled instance, or a future out-of-process writer). */
 export function loadState(): SimState {
-    if (cached) return cached;
+    if (store.cached && existsSync(STATE_FILE) && statSync(STATE_FILE).mtimeMs <= store.cachedMtimeMs) return store.cached;
     const fromDisk = readFromDisk();
     if (fromDisk) {
-        cached = fromDisk;
-        return cached;
+        store.cached = fromDisk;
+        store.cachedMtimeMs = statSync(STATE_FILE).mtimeMs;
+        return store.cached;
     }
-    cached = buildDefaultState();
-    writeToDisk(cached);
-    return cached;
+    if (store.cached) return store.cached; // disk unreadable/missing right now — keep serving the last good state
+    store.cached = buildDefaultState();
+    store.cachedMtimeMs = writeToDisk(store.cached);
+    return store.cached;
 }
 
 /** Apply a mutation and persist it. Serialized so overlapping requests never corrupt the file. */
 export function saveState(mutate: (draft: SimState) => void): Promise<SimState> {
-    const run = writeQueue.then(() => {
+    const run = store.writeQueue.then(() => {
         const draft: SimState = structuredClone(loadState());
         mutate(draft);
         assertValidState(draft);
-        writeToDisk(draft);
-        cached = draft;
+        store.cachedMtimeMs = writeToDisk(draft);
+        store.cached = draft;
         return draft;
     });
-    writeQueue = run.then(() => undefined, () => undefined);
+    store.writeQueue = run.then(() => undefined, () => undefined);
     return run;
 }
 
 /** Reseed from scratch — used by the dev-only reset endpoint. */
 export function resetState(): SimState {
-    cached = buildDefaultState();
-    writeToDisk(cached);
-    return cached;
+    store.cached = buildDefaultState();
+    store.cachedMtimeMs = writeToDisk(store.cached);
+    return store.cached;
 }

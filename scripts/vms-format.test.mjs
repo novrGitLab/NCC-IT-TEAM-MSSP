@@ -41,15 +41,14 @@ test('relative time is computed against the given clock', () => {
     assert.equal(f.fmtDay('2026-10-05'), '05 Oct');
 });
 
-test('VMS sections: eight, each route maps to its section and page; operations is manager-only', () => {
-    assert.equal(s.VMS_SECTIONS.length, 8);
-    assert.deepEqual(s.VMS_SECTIONS.filter((x) => x.managerOnly).map((x) => x.id), ['operations']);
+test('VMS sections: seven, each route maps to its section and page (Scanner Operations and Asset Discovery removed for the single-organization edition)', () => {
+    assert.equal(s.VMS_SECTIONS.length, 7);
+    assert.deepEqual(s.VMS_SECTIONS.filter((x) => x.managerOnly).map((x) => x.id), []);
     const at = (p) => { const r = s.vmsLocate(p); return r && `${r.section.id}:${r.page.href}`; };
     assert.equal(at('/admin/vms'), 'overview:/admin/vms');
     assert.equal(at('/admin/vms/assets/1234'), 'assets:/admin/vms/assets');
     assert.equal(at('/admin/vms/scans/history'), 'detection:/admin/vms/scans/history');
     assert.equal(at('/admin/vms/scans'), 'detection:/admin/vms/scans');
     assert.equal(at('/admin/vms/remediation/ai'), 'remediation:/admin/vms/remediation/ai');
-    assert.equal(at('/admin/vms/operations/workers'), 'operations:/admin/vms/operations/workers');
     assert.equal(at('/admin/secops'), null);
 });

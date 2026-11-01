@@ -66,7 +66,7 @@ export function VmsMonitoringRules() {
                         <KpiCard label="Policies" value={s.policies.list?.length ?? 0} />
                         <KpiCard label="Enabled" value={s.policies.list?.filter((p) => p.enabled).length ?? 0} tone={s.policies.list?.some((p) => p.enabled) ? 'warning' : 'good'} sub="Automatic scanning is on while any is enabled" />
                         <KpiCard label="Last policy run" text={s.scheduler.policies?.at ? fmtWat(s.scheduler.policies.at).replace(/ WAT$/, '') : 'Never'} sub="Policies are evaluated hourly" />
-                        <KpiCard label="Active scope entries" value={s.scopes.active} sub={`${s.scopes.vuln_allowed} allow vulnerability scans`} href="/admin/vms/discovery" />
+                        <KpiCard label="Active scope entries" value={s.scopes.active} sub={`${s.scopes.vuln_allowed} allow vulnerability scans`} />
                     </section>
                     {can.scope && (
                         <Card>

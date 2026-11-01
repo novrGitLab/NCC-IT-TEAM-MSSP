@@ -16,6 +16,8 @@ export interface VmsScan {
     worker_id: string | null; heartbeat_at: string | null; cancel_requested: boolean; purpose?: string;
     /** Why a queued scan cannot run as things stand (P12); null when nothing stands in its way. */
     attention?: string | null;
+    /** Set for a scan targeted at one specific asset (e.g. the onboarding scenario's scan-on-demand) — absent for scope-wide scans. */
+    target_asset_id?: string | null;
 }
 export interface VmsAsset {
     id: string; asset_type: 'domain' | 'host' | 'ip' | 'endpoint'; value: string; hostnames: string[]; ips: string[];

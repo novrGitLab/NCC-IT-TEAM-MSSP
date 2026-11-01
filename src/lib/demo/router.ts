@@ -8,19 +8,14 @@
 
 import { DEMO_ALERTS, DEMO_ALERT_STATS, byAlertId, patchAlert } from './alerts';
 import { DEMO_CASES, DEMO_CASES_SUMMARY, DEMO_PLAYBOOKS, DEMO_APPROVALS } from './incidents';
-import { DEMO_TI_FEEDS, DEMO_TI_OVERVIEW, DEMO_TI_ACTORS, DEMO_TI_MATCHES, DEMO_TI_MAP_POINTS, DEMO_TI_VULNERABILITIES } from './threats';
+import { DEMO_TI_FEEDS, DEMO_TI_OVERVIEW, DEMO_TI_ACTORS, DEMO_TI_SOURCE_NAMED, DEMO_TI_ACTOR_NOTES, DEMO_TI_MATCHES, DEMO_TI_MAP_POINTS, DEMO_TI_VULNERABILITIES } from './threats';
 import { DEMO_WEEKLY_INSIGHTS, DEMO_REPORTS } from './reports';
-import { DEMO_COLLECTORS, DEMO_WORKER_STATUS, DEMO_DEPLOYMENT_STEPS } from './collectors';
-import { getNigeriaThreatsResponse } from './nigeria';
+import { DEMO_WORKER_STATUS, DEMO_DEPLOYMENT_STEPS } from './collectors';
 
 export interface DemoResponse {
     status: number;
     data: unknown;
 }
-
-// Session-lived store for orgs created through the onboarding wizard — not yet migrated to the
-// simulation engine's persisted organisations list, resets on reload.
-const DEMO_ORGANISATIONS: { id: string; name: string; domain: string; industry: string; plan: string; wazuh_group?: string }[] = [];
 
 function parseBody(body: unknown): Record<string, unknown> {
     if (!body) return {};
@@ -72,7 +67,7 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
             },
         };
     }
-    if (path === '/api/ti/actors') return { status: 200, data: { actors: DEMO_TI_ACTORS } };
+    if (path === '/api/ti/actors') return { status: 200, data: { actors: DEMO_TI_ACTORS, source_named: DEMO_TI_SOURCE_NAMED, notes: DEMO_TI_ACTOR_NOTES } };
     if (path === '/api/ti/matches') return { status: 200, data: { matches: DEMO_TI_MATCHES } };
     if (path === '/api/ti/map') return { status: 200, data: { points: DEMO_TI_MAP_POINTS } };
     if (path === '/api/ti/vulnerabilities') return { status: 200, data: { vulnerabilities: DEMO_TI_VULNERABILITIES, total: DEMO_TI_VULNERABILITIES.length } };
@@ -190,9 +185,6 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
                 : [['Mon', 9, 3, 1], ['Tue', 6, 2, 0], ['Wed', 11, 4, 1], ['Thu', 8, 3, 1], ['Fri', 13, 5, 2], ['Sat', 4, 1, 0], ['Sun', 5, 2, 1]];
         return { status: 200, data: points.map(([label, alerts, incidents, critical]) => ({ label, alerts, incidents, critical })) };
     }
-    if (path.startsWith('/api/dashboard/nigeria-threats')) {
-        return { status: 200, data: getNigeriaThreatsResponse() };
-    }
     if (path.startsWith('/api/platform/health')) {
         // "operational" with every monitored service up — consistent with /api/wazuh/status
         // above reporting the manager as connected in this environment.
@@ -250,40 +242,10 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
     }
 
     // --- Onboarding / Collectors ---
-    if (path.startsWith('/api/admin/collectors') || path.startsWith('/api/collectors')) return { status: 200, data: { collectors: DEMO_COLLECTORS } };
+    // /api/organisations*, /api/admin/collectors and /api/collectors* are now real route handlers
+    // backed by the simulation engine (src/app/api/organisations/**, src/app/api/collectors/**) —
+    // see src/lib/api.ts's isPortedPath(). Only the deployment-steps walkthrough text remains here.
     if (path.startsWith('/api/onboarding/deployment-steps')) return { status: 200, data: { steps: DEMO_DEPLOYMENT_STEPS } };
-
-    // --- Onboarding / New-client wizard (OnboardingWizard.tsx) --- a real local mutation
-    // (session-lived orgs list — not yet migrated to the simulation engine's persisted
-    // organisations), not a scripted success — so the wizard's own completion screen, which reads
-    // org.id/org.name back, reflects what was actually submitted.
-    if (path === '/api/organisations' && method === 'POST') {
-        const id = `org-sim-${Date.now()}`;
-        const org = { id, name: String(body.name ?? 'New organisation'), domain: String(body.domain ?? ''), industry: String(body.industry ?? ''), plan: String(body.plan ?? 'starter') };
-        DEMO_ORGANISATIONS.push(org);
-        return { status: 201, data: org };
-    }
-    {
-        const m = path.match(/^\/api\/organisations\/([^/]+)\/setup$/);
-        if (m && method === 'POST') return { status: 200, data: { ok: true, message: 'Compliance baseline recorded for this session only.' } };
-    }
-    {
-        const m = path.match(/^\/api\/organisations\/([^/]+)\/users$/);
-        if (m && method === 'POST') return { status: 200, data: { ok: true, message: 'Team member added to this session only — no invitation email was sent.' } };
-    }
-    {
-        const m = path.match(/^\/api\/organisations\/([^/]+)$/);
-        if (m && method === 'PATCH') {
-            const org = DEMO_ORGANISATIONS.find((o) => o.id === m[1]);
-            if (org && typeof body.wazuh_group === 'string') (org as { wazuh_group?: string }).wazuh_group = body.wazuh_group;
-            return { status: 200, data: { ok: true } };
-        }
-        if (m) {
-            const org = DEMO_ORGANISATIONS.find((o) => o.id === m[1]);
-            return org ? { status: 200, data: org } : { status: 404, data: { error: 'Organisation not found' } };
-        }
-    }
-    if (path === '/api/organisations') return { status: 200, data: { organisations: DEMO_ORGANISATIONS } };
 
     // --- Settings (trivial fixed answers) ---
     if (path === '/api/admin/team/presence') {

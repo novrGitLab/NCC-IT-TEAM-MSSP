@@ -28,8 +28,35 @@ export const DEMO_TI_OVERVIEW = {
 };
 
 export const DEMO_TI_ACTORS = [
-    { id: 'actor-1', name: 'FIN-DEMO-12', confidence: 'medium', last_seen: daysAgo(3), techniques: ['T1110', 'T1071'] },
-    { id: 'actor-2', name: 'APT-DEMO-77', confidence: 'low', last_seen: daysAgo(14), techniques: ['T1190', 'T1059'] },
+    {
+        id: 'actor-1', name: 'FIN-DEMO-12', aliases: ['FIN12-Shadow'], focus: 'global' as const, origin: 'Unknown (financially motivated)', motivation: 'Financial gain',
+        targeted_sectors: ['Financial services', 'Telecommunications'], targeted_regions: ['Global'],
+        techniques: [{ id: 'T1110', name: 'Brute Force' }, { id: 'T1071', name: 'Application Layer Protocol' }],
+        description: 'A financially motivated cluster observed running credential-stuffing campaigns against internet-facing login services, then pivoting to internal systems once a foothold is gained.',
+        damage: 'Reported credential theft and fraudulent transactions at targeted organisations; no confirmed link to this organisation\'s own environment.',
+        known_incidents: [{ year: '2025', title: 'Credential-stuffing wave against regional banks', description: 'Public reporting described a multi-week campaign against online banking portals.', source: 'Industry ISAC advisory' }],
+        reference: 'Industry ISAC profile', reference_url: 'https://www.cisa.gov/topics/cyber-threats-and-advisories', library_confidence: 'medium', last_active: daysAgo(3),
+        source_mentions: { count: 2, nigeria_targeting: 0, last: daysAgo(1), reports: [{ id: 'rpt-1', title: 'Credential-stuffing indicators matched against perimeter logs', published_at: daysAgo(1) }, { id: 'rpt-2', title: 'Follow-up indicator sweep', published_at: daysAgo(6) }] },
+    },
+    {
+        id: 'actor-2', name: 'APT-DEMO-77', aliases: ['Silent Orchid'], focus: 'global' as const, origin: 'Unknown (suspected state-nexus)', motivation: 'Espionage',
+        targeted_sectors: ['Telecommunications', 'Critical infrastructure'], targeted_regions: ['Global'],
+        techniques: [{ id: 'T1190', name: 'Exploit Public-Facing Application' }, { id: 'T1059', name: 'Command and Scripting Interpreter' }],
+        description: 'A long-running intrusion set known for exploiting unpatched public-facing applications and middleware to establish persistence.',
+        damage: 'Publicly reported long-dwell-time intrusions at telecommunications and infrastructure operators; relevance here is advisory, not a confirmed detection.',
+        known_incidents: [{ year: '2024', title: 'Middleware exploitation campaign', description: 'Public reporting linked exploitation of an unpatched middleware CVE to this cluster.', source: 'Vendor threat intelligence report' }],
+        reference: 'Vendor threat intelligence report', reference_url: 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog', library_confidence: 'low', last_active: daysAgo(14),
+        source_mentions: { count: 1, nigeria_targeting: 0, last: daysAgo(14), reports: [{ id: 'rpt-3', title: 'Exploitation pattern consistent with public reporting', published_at: daysAgo(14) }] },
+    },
+];
+
+export const DEMO_TI_SOURCE_NAMED = [
+    { name: 'Credential-Reaper', count: 3, last: daysAgo(2), nigeria: 0, reports: [{ id: 'rpt-4', title: 'Source-tagged credential harvesting activity', published_at: daysAgo(2) }] },
+];
+
+export const DEMO_TI_ACTOR_NOTES = [
+    'Library profiles summarise public reporting and are not this platform\'s own attribution.',
+    'Source-named entries reflect the tag a partner feed applied to its own report, not a verified identification.',
 ];
 
 export const DEMO_TI_MATCHES = [

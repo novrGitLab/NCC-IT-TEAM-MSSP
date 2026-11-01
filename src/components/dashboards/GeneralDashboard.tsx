@@ -8,8 +8,6 @@ import {
 } from 'lucide-react';
 import { KpiCard, type KpiCardProps } from '../shared/KpiCard';
 import { ChartWrapper } from '../shared/ChartWrapper';
-import { GlobalThreatMap } from '../geo/GlobalThreatMap';
-import { NigeriaThreatMap } from '../geo/NigeriaThreatMap';
 import { apiUrl, apiFetch } from '@/lib/api';
 import { fetchAlertStats, loadJson, watTime, type AlertStats } from '@/lib/alerts';
 import { AlertFeedStatus } from '@/components/shared/AlertFeedStatus';
@@ -484,11 +482,7 @@ export const GeneralDashboard = () => {
                 {kpiCards.map((kpi, idx) => <KpiCard key={idx} {...kpi} />)}
             </div>
 
-            {/* Row 2: Nigeria map (60%) + Case queue (40%) */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
-                <div className="lg:col-span-5"><NigeriaThreatMap /></div>
-            </div>
-
+            {/* Row 2: Case queue */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
                  <div className="lg:col-span-5"><IncidentQueueWidget incidents={incidentQueue} loading={incidentsLoading} /></div>
             </div>
@@ -506,9 +500,6 @@ export const GeneralDashboard = () => {
 
             {/* Row 5: Recent alerts feed */}
             <AlertsFeed alerts={feedAlerts} failure={feedFailure} loading={feedLoading} />
-
-            {/* Supplementary — kept from the previous dashboard, still real data */}
-            <GlobalThreatMap />
 
             <ChartWrapper title="Security Posture & Alert Activity Trends">
                 <div className="flex items-center gap-2 mb-3">

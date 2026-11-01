@@ -81,8 +81,6 @@ const ALL_THREAT_SOURCES: Array<{ id: string; name: string }> = [
     { id: 'ransomware_groups', name: 'Ransomware Group Intelligence' },
     { id: 'dark_web', name: 'Dark Web Intelligence' },
     { id: 'social_intelligence', name: 'Social Media Threat Intelligence' },
-    { id: 'nigeria_cert', name: 'Nigeria CERT / National Cybersecurity Advisories' },
-    { id: 'ng_threat_feed', name: 'Nigeria Threat Intelligence Feed' },
     { id: 'custom_feed', name: 'Custom Threat Intelligence Feed' },
 ];
 
@@ -286,14 +284,14 @@ export function TiSources() {
             const anchor = document.createElement('a');
 
             anchor.href = url;
-            anchor.download = `novrsoc-${collection}-${ceiling}.json`;
+            anchor.download = `ncc-soc-${collection}-${ceiling}.json`;
             document.body.appendChild(anchor);
             anchor.click();
             anchor.remove();
 
             URL.revokeObjectURL(url);
 
-            if (result.headers.get('X-NCC SOC-Truncated') === 'true') {
+            if (result.headers.get('X-NCC-SOC-Truncated') === 'true') {
                 setMsg({
                     ok: true,
                     text: 'The bundle holds the first 5,000 objects; use TAXII for the full collection.',

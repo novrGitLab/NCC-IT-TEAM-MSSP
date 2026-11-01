@@ -23,14 +23,18 @@ const PORTED_EXACT = new Set([
     '/api/vms/events', '/api/vms/endpoints', '/api/vms/report', '/api/vms/admin/status', '/api/vms/admin/wazuh/check', '/api/vms/eligibility/refresh',
     '/api/client/vms/summary', '/api/client/vms/assets', '/api/client/vms/tasks',
     '/api/ti/sources',
-    '/api/ai/generate', '/api/ai/artifacts',
+    '/api/ai/generate', '/api/ai/artifacts', '/api/ai/diagnostic',
     '/api/invites',
+    '/api/organisations', '/api/admin/collectors', '/api/collectors', '/api/posture/summary',
 ]);
 const PORTED_PATTERNS = [
-    /^\/api\/vms\/assets\/[^/]+$/, /^\/api\/vms\/assets\/[^/]+\/graph$/,
+    /^\/api\/vms\/assets\/[^/]+$/, /^\/api\/vms\/assets\/[^/]+\/graph$/, /^\/api\/vms\/assets\/[^/]+\/onboarding-scan$/,
     /^\/api\/vms\/findings\/[^/]+$/, /^\/api\/vms\/findings\/[^/]+\/tasks$/,
     /^\/api\/vms\/tasks\/[^/]+$/,
     /^\/api\/ai\/artifacts\/[^/]+\/feedback$/,
+    /^\/api\/organisations\/[^/]+$/, /^\/api\/organisations\/[^/]+\/setup$/, /^\/api\/organisations\/[^/]+\/users$/,
+    /^\/api\/collectors\/[^/]+$/, /^\/api\/collectors\/[^/]+\/events$/,
+    /^\/api\/posture\/[^/]+$/,
 ];
 
 /** True once a path's src/app/api/**\/route.ts handler exists — see the route migration plan. */

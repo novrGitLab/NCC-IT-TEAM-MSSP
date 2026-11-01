@@ -179,7 +179,7 @@ function StartScan({ onDone }: { onDone: (m: Msg, assessmentId?: string) => void
                         {form.kind === 'ports' && <label className="text-[11px] font-semibold text-foreground-muted">Ports<input className={`${input} w-28`} value={form.ports} onChange={(e) => setForm({ ...form, ports: e.target.value })} title="top-100, top-1000, 1-65535 or a list like 22,80,443" /></label>}
                         <button type="submit" disabled={!form.scope_id} className={btn('primary', 'md')}><Play className="w-3.5 h-3.5" aria-hidden /> Queue scan</button>
                     </div>
-                    {scopes.data && live.length === 0 && <p className="md:col-span-4 text-[11px] text-foreground">No active authorised scope. <Link href="/admin/vms/discovery" className="font-semibold underline">Add one in Asset Discovery</Link> (managers).</p>}
+                    {scopes.data && live.length === 0 && <p className="md:col-span-4 text-[11px] text-foreground">No active authorised scope. Add a collector in Collector Management, or contact a manager.</p>}
                 </form>
             )}
             <ConfirmDialog open={confirm} title={mode === 'assessment' ? 'Start this assessment?' : 'Queue this scan?'}

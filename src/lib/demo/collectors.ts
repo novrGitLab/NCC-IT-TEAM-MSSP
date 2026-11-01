@@ -3,14 +3,6 @@
 const now = Date.now();
 const minsAgo = (n: number) => new Date(now - n * 60_000).toISOString();
 
-export const DEMO_COLLECTORS = [
-    { id: 'collector-1', name: 'demo-server-collector', asset_type: 'server', integration: 'Wazuh agent (simulated)', status: 'connected', last_heartbeat: minsAgo(1), telemetry_events_24h: 4820 },
-    { id: 'collector-2', name: 'demo-weblogic-collector', asset_type: 'middleware', integration: 'Oracle WebLogic log shipper (simulated)', status: 'connected', last_heartbeat: minsAgo(2), telemetry_events_24h: 1140 },
-    { id: 'collector-3', name: 'demo-cloud-collector', asset_type: 'cloud', integration: 'AWS CloudTrail forwarder (simulated)', status: 'connecting', last_heartbeat: minsAgo(14), telemetry_events_24h: 0 },
-    { id: 'collector-4', name: 'demo-endpoint-collector', asset_type: 'workstation', integration: 'Endpoint agent (simulated)', status: 'connected', last_heartbeat: minsAgo(0), telemetry_events_24h: 2310 },
-    { id: 'collector-5', name: 'demo-firewall-collector', asset_type: 'network', integration: 'Syslog forwarder (simulated)', status: 'disconnected', last_heartbeat: minsAgo(260), telemetry_events_24h: 0 },
-];
-
 export const DEMO_WORKER_STATUS = {
     workers: [
         { id: 'vms-worker-demo', kind: 'discovery,ports,vuln_nuclei', status: 'online', last_seen: minsAgo(1) },

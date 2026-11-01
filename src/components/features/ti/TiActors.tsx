@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import { Users, ExternalLink } from 'lucide-react';
-import { PageHeader, EmptyState, ErrorState, Segmented, SearchBox, Drawer, Tag, btn } from '@/components/features/vms/kit';
+import { PageHeader, EmptyState, ErrorState, SearchBox, Drawer, Tag, btn } from '@/components/features/vms/kit';
 import { Card, SectionTitle, Skeleton } from '@/components/features/vms/ui';
 import { DataTable, type Column } from '@/components/features/vms/table';
 import { useVmsData } from '@/components/features/vms/data';
@@ -16,27 +16,22 @@ import { fmtWat } from '@/lib/vms';
 import { Field } from './common';
 import { ago, type TiActor, type SourceNamedActor } from '@/lib/ti';
 
-type Focus = 'all' | 'nigeria' | 'global';
-
 export function TiActors() {
     const { load, data, reload, at } = useVmsData<{ actors: TiActor[]; source_named: SourceNamedActor[]; notes: string[] }>('/api/ti/actors');
-    const [focus, setFocus] = useState<Focus>('nigeria');
     const [q, setQ] = useState('');
     const [open, setOpen] = useState<TiActor | null>(null);
     const now = at ?? 0;
-    const actors = useMemo(() => (data?.actors ?? []).filter((a) => (focus === 'all' || a.focus === focus) && (!q || [a.name, ...a.aliases, ...a.targeted_sectors, a.origin].some((s) => s.toLowerCase().includes(q.toLowerCase())))), [data, focus, q]);
+    const actors = useMemo(() => (data?.actors ?? []).filter((a) => !q || [a.name, ...a.aliases, ...a.targeted_sectors, a.origin].some((s) => s.toLowerCase().includes(q.toLowerCase()))), [data, q]);
     const named: Column<SourceNamedActor>[] = [
         { key: 'name', header: 'Actor (as the source named it)', render: (r) => <span className="text-xs font-semibold">{r.name}</span>, sort: (r) => r.name },
         { key: 'count', header: 'Reports', render: (r) => <span className="tabular-nums text-xs">{r.count}</span>, sort: (r) => r.count },
-        { key: 'ng', header: 'Tagging Nigeria as target', render: (r) => <span className="tabular-nums text-xs">{r.nigeria}</span>, sort: (r) => r.nigeria },
         { key: 'last', header: 'Last mentioned', render: (r) => <span className="text-[11px] text-foreground-muted" title={r.last ? fmtWat(r.last) : ''}>{ago(r.last, now)}</span>, sort: (r) => r.last ?? '' },
     ];
 
     return (
         <div className="space-y-5">
             <PageHeader title="Threat Actors" icon={Users}
-                description="Profiles summarising public reporting, and the actors partner sources have named in their reports. Neither is NCC SOC's own attribution."
-                actions={<Segmented label="Focus" value={focus} onChange={setFocus} options={[['nigeria', 'Nigeria / West Africa'], ['global', 'Global'], ['all', 'All']] as const} />} />
+                description="Profiles summarising public reporting, and the actors partner sources have named in their reports. Neither is NCC SOC's own attribution." />
 
             {load.state === 'error' ? <ErrorState error={load.error} status={load.status} onRetry={reload} /> : (
                 <>
@@ -105,7 +100,7 @@ export function TiActors() {
                             {open.source_mentions.reports.length ? (
                                 <ul className="space-y-1">{open.source_mentions.reports.map((r) => <li key={r.id} className="text-xs">{r.title} <span className="text-foreground-muted">· {r.published_at ? fmtWat(r.published_at) : 'undated'}</span></li>)}</ul>
                             ) : <p className="text-[11px] text-foreground-muted">No partner report named this actor in the last year.</p>}
-                            {open.source_mentions.nigeria_targeting > 0 && <p className="text-[11px] mt-1.5">{open.source_mentions.nigeria_targeting} of them tag Nigeria as a target (the source&apos;s claim).</p>}
+                            {open.source_mentions.nigeria_targeting > 0 && <p className="text-[11px] mt-1.5">{open.source_mentions.nigeria_targeting} of them tag this organisation&apos;s region as a target (the source&apos;s claim).</p>}
                         </section>
                         <a href={open.reference_url} target="_blank" rel="noopener noreferrer" className={btn('secondary')}>Read the profile source: {open.reference} <ExternalLink className="w-3.5 h-3.5" /></a>
                     </div>

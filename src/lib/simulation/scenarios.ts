@@ -33,8 +33,17 @@ export function buildDefaultState(): SimState {
         extraTasks: [],
 
         organisations: [
-            { id: 'org-demo-1', name: 'NCC SOC Evaluation Org', domain: 'ncc-soc.demo', industry: 'Telecommunications', plan: 'Evaluation' },
+            {
+                id: 'org-demo-1', name: 'NCC SOC Evaluation Org', domain: 'ncc-soc.demo', industry: 'Telecommunications', plan: 'Evaluation',
+                businessUnits: ['Platform', 'Finance', 'Engineering'], infrastructureCategories: ['servers', 'middleware', 'cloud'],
+                frameworks: [{ framework: 'NDPA', enabled: true, initialScore: 0 }],
+                onboardingStep: 5, onboardingComplete: true,
+                createdAt: new Date(now).toISOString(), updatedAt: new Date(now).toISOString(),
+            },
         ],
+        collectors: [],
+        ingestionEvents: [],
+        postureEvents: [],
 
         users: [
             { id: randomUUID(), email: adminEmail.toLowerCase(), passwordHash: hashPassword(adminPassword), role: 'super_admin', orgId: null, name: 'Administrator', createdAt: new Date(now).toISOString(), disabled: false },
@@ -43,6 +52,7 @@ export function buildDefaultState(): SimState {
         sessions: [],
         invites: [],
         aiArtifacts: [],
+        aiDiagnostic: { verifiedModel: null, verifiedAt: null, lastError: null, modelsTried: [] },
 
         auditLog: [],
     };

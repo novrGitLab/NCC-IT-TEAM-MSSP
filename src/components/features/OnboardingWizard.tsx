@@ -17,13 +17,13 @@ interface DemoCollector { id: string; name: string; asset_type: string; integrat
 interface DemoDeploymentStep { step: number; title: string; description: string }
 
 const INFRA_TYPES = [
-    { id: 'server', label: 'Servers', icon: Server, assetType: 'server', sampleTelemetry: ['4,820 auth/syslog events forwarded', 'OS patch inventory refreshed', '2 SSH brute-force attempts flagged'] },
-    { id: 'middleware', label: 'Oracle WebLogic / Middleware', icon: Database, assetType: 'middleware', sampleTelemetry: ['1,140 application log lines shipped', 'WebLogic admin console access logged', '1 slow-query warning captured'] },
-    { id: 'cloud', label: 'Cloud Infrastructure', icon: Cloud, assetType: 'cloud', sampleTelemetry: ['CloudTrail API-call events queued', 'IAM policy change detected (simulated)', 'S3 bucket ACL drift check pending'] },
-    { id: 'endpoint', label: 'Endpoints', icon: Laptop, assetType: 'workstation', sampleTelemetry: ['2,310 endpoint telemetry events forwarded', 'EDR heartbeat received', '1 removable-media event logged'] },
-    { id: 'workstation', label: 'Developer Workstations', icon: Code2, assetType: 'workstation', sampleTelemetry: ['Dev tool inventory collected', 'Outbound package-registry access logged', 'Local firewall status: enabled'] },
-    { id: 'network', label: 'Network Devices', icon: Network, assetType: 'network', sampleTelemetry: ['Syslog stream connected (simulated)', 'Interface flap on uplink 2 (example)', 'Routing table snapshot captured'] },
-    { id: 'firewall', label: 'Firewalls', icon: Flame, assetType: 'network', sampleTelemetry: ['Allow/deny rule hits forwarded', '3 blocked inbound probes (example)', 'Ruleset version check completed'] },
+    { id: 'server', label: 'Servers', icon: Server, assetType: 'server', infraCategory: 'servers', collectorKind: 'agentless', sampleTelemetry: ['4,820 auth/syslog events forwarded', 'OS patch inventory refreshed', '2 SSH brute-force attempts flagged'] },
+    { id: 'middleware', label: 'Oracle WebLogic / Middleware', icon: Database, assetType: 'middleware', infraCategory: 'middleware', collectorKind: 'log_forwarding', sampleTelemetry: ['1,140 application log lines shipped', 'WebLogic admin console access logged', '1 slow-query warning captured'] },
+    { id: 'cloud', label: 'Cloud Infrastructure', icon: Cloud, assetType: 'cloud', infraCategory: 'cloud', collectorKind: 'api_connector', sampleTelemetry: ['CloudTrail API-call events queued', 'IAM policy change detected (simulated)', 'S3 bucket ACL drift check pending'] },
+    { id: 'endpoint', label: 'Endpoints', icon: Laptop, assetType: 'workstation', infraCategory: 'endpoints', collectorKind: 'endpoint', sampleTelemetry: ['2,310 endpoint telemetry events forwarded', 'EDR heartbeat received', '1 removable-media event logged'] },
+    { id: 'workstation', label: 'Developer Workstations', icon: Code2, assetType: 'workstation', infraCategory: 'dev_workstations', collectorKind: 'endpoint', sampleTelemetry: ['Dev tool inventory collected', 'Outbound package-registry access logged', 'Local firewall status: enabled'] },
+    { id: 'network', label: 'Network Devices', icon: Network, assetType: 'network', infraCategory: 'network', collectorKind: 'network_telemetry', sampleTelemetry: ['Syslog stream connected (simulated)', 'Interface flap on uplink 2 (example)', 'Routing table snapshot captured'] },
+    { id: 'firewall', label: 'Firewalls', icon: Flame, assetType: 'network', infraCategory: 'firewall', collectorKind: 'network_telemetry', sampleTelemetry: ['Allow/deny rule hits forwarded', '3 blocked inbound probes (example)', 'Ruleset version check completed'] },
 ] as const;
 
 const EXAMPLE_CONFIG: Record<string, string> = {
@@ -36,11 +36,14 @@ const EXAMPLE_CONFIG: Record<string, string> = {
     firewall: '# Example only — illustrative, does not run anything\ncollector listen --protocol syslog --source firewall --mode simulated',
 };
 
-function CollectorWalkthrough() {
+function CollectorWalkthrough({ orgId }: { orgId: string | null }) {
     const [collectors, setCollectors] = useState<DemoCollector[] | null>(null);
     const [steps, setSteps] = useState<DemoDeploymentStep[] | null>(null);
     const [infraId, setInfraId] = useState<(typeof INFRA_TYPES)[number]['id'] | null>(null);
     const [walkStep, setWalkStep] = useState(1);
+    const [creating, setCreating] = useState(false);
+    const [created, setCreated] = useState<string | null>(null);
+    const [createError, setCreateError] = useState<string | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -134,11 +137,44 @@ function CollectorWalkthrough() {
             )}
 
             {walkStep === 7 && infra && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                     <p className="text-xs text-foreground-muted">{steps?.find((s) => s.step === 7)?.description}</p>
                     <p className="text-[11px] text-foreground-muted">Once connected, this {infra.label.toLowerCase()} would appear as a monitored asset with live findings and alerts attached to it.</p>
-                    <Link href="/admin/vms/assets" className="inline-flex items-center gap-1 text-xs font-bold text-purple hover:text-purple-hover">
-                        View Asset Inventory <ArrowRight size={12} />
+                    {created ? (
+                        <div className="rounded-lg border border-green/30 bg-green/5 p-3 text-xs text-foreground">
+                            Collector <strong>{created}</strong> created and connecting — it will progress automatically and discover assets into the inventory within a few minutes.
+                        </div>
+                    ) : (
+                        <button
+                            disabled={creating || !orgId}
+                            onClick={async () => {
+                                if (!orgId) return;
+                                setCreating(true);
+                                setCreateError(null);
+                                const name = `${infra.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-collector-${Date.now().toString(36)}`;
+                                try {
+                                    const res = await apiFetch(apiUrl('/api/collectors'), {
+                                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ name, org_id: orgId, collector_kind: infra.collectorKind, infra_category: infra.infraCategory, business_unit: '', asset_scope: infra.label, collection_interval_minutes: 15 }),
+                                    });
+                                    const d = await res.json().catch(() => null);
+                                    if (!res.ok) { setCreateError(d?.error ?? 'Could not create the collector.'); return; }
+                                    setCreated(d.name ?? name);
+                                } catch {
+                                    setCreateError('Could not reach the server.');
+                                } finally {
+                                    setCreating(false);
+                                }
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-purple rounded-lg px-4 py-2 disabled:opacity-50 hover:bg-purple-hover transition-colors"
+                        >
+                            {creating ? 'Creating…' : 'Create Collector'}
+                        </button>
+                    )}
+                    {createError && <p className="text-[11px] text-red font-semibold">{createError}</p>}
+                    {!orgId && <p className="text-[11px] text-amber">Complete Step 1 (Company Info) first — the collector needs an organisation to belong to.</p>}
+                    <Link href="/admin/onboarding/collectors" className="inline-flex items-center gap-1 text-xs font-bold text-purple hover:text-purple-hover">
+                        Go to Collector Management <ArrowRight size={12} />
                     </Link>
                 </div>
             )}
@@ -199,6 +235,12 @@ export function OnboardingWizard() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Draft persistence — created as soon as Step 1 is complete, so progress survives a reload
+    // (resumed by its org id, kept in localStorage) rather than only living in component state.
+    const DRAFT_KEY = 'onboarding_draft_org_id';
+    const [draftOrgId, setDraftOrgId] = useState<string | null>(null);
+    const [resuming, setResuming] = useState(true);
+
     // Step 1
     const [name, setName] = useState('');
     const [domain, setDomain] = useState('');
@@ -206,6 +248,7 @@ export function OnboardingWizard() {
     const [plan, setPlan] = useState<(typeof PLANS)[number]>('starter');
     const [country, setCountry] = useState('Nigeria');
     const [address, setAddress] = useState('');
+    const [businessUnits, setBusinessUnits] = useState('');
 
     // Step 2
     const [contactName, setContactName] = useState('');
@@ -238,9 +281,42 @@ export function OnboardingWizard() {
     const [wazuhGroup, setWazuhGroup] = useState('');
     const [endpointCount, setEndpointCount] = useState('');
     const [locations, setLocations] = useState('');
+    const [infraCategories, setInfraCategories] = useState<Set<string>>(new Set());
+    const toggleInfraCategory = (id: string) => setInfraCategories((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
     // Result
     const [done, setDone] = useState<{ orgId: string; orgName: string; wazuhGroup: string } | null>(null);
+
+    // Resume an in-progress draft from a previous visit.
+    useEffect(() => {
+        const savedId = typeof window === 'undefined' ? null : localStorage.getItem(DRAFT_KEY);
+        if (!savedId) { setResuming(false); return; }
+        let active = true;
+        void apiFetch(apiUrl(`/api/organisations/${savedId}`)).then(async (r) => {
+            if (!active) return;
+            if (r.ok) {
+                const org = await r.json();
+                if (org && !org.onboardingComplete) {
+                    setDraftOrgId(org.id);
+                    setName(org.name ?? ''); setDomain(org.domain ?? ''); setIndustry(org.industry || INDUSTRIES[0]); setPlan(org.plan ?? 'starter');
+                    setCountry(org.country ?? 'Nigeria'); setAddress(org.address ?? '');
+                    setContactName(org.contactName ?? ''); setContactEmail(org.contactEmail ?? ''); setContactPhone(org.contactPhone ?? '');
+                    setCisoName(org.cisoName ?? ''); setCisoEmail(org.cisoEmail ?? '');
+                    setBusinessUnits((org.businessUnits ?? []).join(', '));
+                    setInfraCategories(new Set(org.infrastructureCategories ?? []));
+                    setWazuhGroup(org.wazuh_group ?? '');
+                    setStep(Math.min(STEPS.length, org.onboardingStep || 1));
+                } else {
+                    localStorage.removeItem(DRAFT_KEY);
+                }
+            } else {
+                localStorage.removeItem(DRAFT_KEY);
+            }
+            setResuming(false);
+        }).catch(() => { if (active) setResuming(false); });
+        return () => { active = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, to resume a draft before the user touches anything
+    }, []);
 
     const canAdvance = (): boolean => {
         if (step === 1) return name.trim().length > 0 && domain.trim().length > 0;
@@ -248,13 +324,54 @@ export function OnboardingWizard() {
         return true;
     };
 
+    /** Persists Step 1 as a draft organisation on first advance, then keeps it updated on every
+     *  later step — this is the "save and resume" requirement: progress lives in the simulation
+     *  store, not only in this component's state. */
+    const persistStepProgress = async (nextStep: number) => {
+        if (!draftOrgId) {
+            if (step !== 1) return; // nothing to create yet
+            try {
+                const res = await apiFetch(apiUrl('/api/organisations'), {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name.trim(), domain: domain.trim(), industry, plan, country, address, business_units: businessUnits.split(',').map((s) => s.trim()).filter(Boolean) }),
+                });
+                const org = await res.json().catch(() => null);
+                if (res.ok && org?.id) {
+                    setDraftOrgId(org.id);
+                    localStorage.setItem(DRAFT_KEY, org.id);
+                    await apiFetch(apiUrl(`/api/organisations/${org.id}`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ onboarding_step: nextStep }) }).catch(() => {});
+                }
+            } catch {
+                // Best-effort — a failed draft save shouldn't block moving to the next step locally.
+            }
+            return;
+        }
+        await apiFetch(apiUrl(`/api/organisations/${draftOrgId}`), {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                onboarding_step: nextStep,
+                business_units: businessUnits.split(',').map((s) => s.trim()).filter(Boolean),
+                infrastructure_categories: [...infraCategories],
+            }),
+        }).catch(() => {});
+    };
+
+    const advance = async () => {
+        if (!canAdvance()) return;
+        const nextStep = Math.min(STEPS.length, step + 1);
+        await persistStepProgress(nextStep);
+        setStep(nextStep);
+    };
+
     const reset = () => {
         setStep(1);
-        setName(''); setDomain(''); setIndustry(INDUSTRIES[0]); setPlan('starter'); setCountry('Nigeria'); setAddress('');
+        setDraftOrgId(null);
+        if (typeof window !== 'undefined') localStorage.removeItem(DRAFT_KEY);
+        setName(''); setDomain(''); setIndustry(INDUSTRIES[0]); setPlan('starter'); setCountry('Nigeria'); setAddress(''); setBusinessUnits('');
         setContactName(''); setContactEmail(''); setContactPhone(''); setCisoName(''); setCisoEmail('');
         setSelectedFrameworks(new Set(['ndpa'])); setScores({}); setAssessLater(new Set());
         setTeam([{ email: '', role: 'soc_manager', name: '' }]);
-        setWazuhGroup(''); setEndpointCount(''); setLocations('');
+        setWazuhGroup(''); setEndpointCount(''); setLocations(''); setInfraCategories(new Set());
         setDone(null); setError(null);
     };
 
@@ -262,19 +379,36 @@ export function OnboardingWizard() {
         setSaving(true);
         setError(null);
         try {
-            const orgRes = await apiFetch(apiUrl('/api/organisations'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: name.trim(), domain: domain.trim(), industry, plan, country, address,
-                    contact_name: contactName, contact_email: contactEmail, contact_phone: contactPhone,
-                    ciso_name: cisoName, ciso_email: cisoEmail,
-                }),
-            });
-            const org = await orgRes.json();
-            if (!orgRes.ok || !org?.id) throw new Error(org?.error || 'Failed to create organisation');
+            let orgId = draftOrgId;
+            let orgName = name;
+            if (!orgId) {
+                // No draft exists yet (e.g. Step 1 was never left) — create it now.
+                const orgRes = await apiFetch(apiUrl('/api/organisations'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name.trim(), domain: domain.trim(), industry, plan, country, address,
+                        contact_name: contactName, contact_email: contactEmail, contact_phone: contactPhone,
+                        ciso_name: cisoName, ciso_email: cisoEmail,
+                        business_units: businessUnits.split(',').map((s) => s.trim()).filter(Boolean),
+                    }),
+                });
+                const org = await orgRes.json();
+                if (!orgRes.ok || !org?.id) throw new Error(org?.error || 'Failed to create organisation');
+                orgId = org.id;
+                orgName = org.name ?? name;
+            } else {
+                // Draft already exists — bring it up to date with everything collected since Step 1.
+                await apiFetch(apiUrl(`/api/organisations/${orgId}`), {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        business_units: businessUnits.split(',').map((s) => s.trim()).filter(Boolean),
+                        infrastructure_categories: [...infraCategories],
+                    }),
+                }).catch(() => {});
+            }
 
-            await apiFetch(apiUrl(`/api/organisations/${org.id}/setup`), {
+            await apiFetch(apiUrl(`/api/organisations/${orgId}/setup`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -289,7 +423,7 @@ export function OnboardingWizard() {
                 }),
             }).catch(() => {}); // non-fatal — org creation itself already succeeded
 
-            await apiFetch(apiUrl(`/api/organisations/${org.id}`), {
+            await apiFetch(apiUrl(`/api/organisations/${orgId}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ wazuh_group: wazuhGroup.trim() || null, setup_complete: true }),
@@ -297,7 +431,7 @@ export function OnboardingWizard() {
 
             await Promise.all(
                 team.filter((m) => m.email.trim()).map((m) =>
-                    apiFetch(apiUrl(`/api/organisations/${org.id}/users`), {
+                    apiFetch(apiUrl(`/api/organisations/${orgId}/users`), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: m.email.trim(), name: m.name.trim() || undefined, role: m.role }),
@@ -305,13 +439,18 @@ export function OnboardingWizard() {
                 )
             );
 
-            setDone({ orgId: org.id, orgName: org.name ?? name, wazuhGroup: wazuhGroup.trim() });
+            if (typeof window !== 'undefined') localStorage.removeItem(DRAFT_KEY);
+            setDone({ orgId: orgId!, orgName, wazuhGroup: wazuhGroup.trim() });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Onboarding failed');
         } finally {
             setSaving(false);
         }
     };
+
+    if (resuming) {
+        return <div className="max-w-2xl mx-auto"><div className="h-64 rounded-2xl bg-card-muted motion-safe:animate-pulse" /></div>;
+    }
 
     if (done) {
         return (
@@ -393,6 +532,11 @@ export function OnboardingWizard() {
                         <div>
                             <label className={labelCls}>Address</label>
                             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Victoria Island, Lagos" className={inputCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Business Units</label>
+                            <input value={businessUnits} onChange={(e) => setBusinessUnits(e.target.value)} placeholder="Retail Banking, IT Operations, Finance" className={inputCls} />
+                            <p className="text-[10px] text-foreground-muted mt-1">Comma-separated. Used to scope collectors and asset ownership later.</p>
                         </div>
                     </div>
                 )}
@@ -477,7 +621,19 @@ export function OnboardingWizard() {
                 {step === 5 && (
                     <div className="space-y-4">
                         <h2 className="font-bold text-sm text-foreground">Infrastructure</h2>
-                        <CollectorWalkthrough />
+                        <div>
+                            <label className={labelCls}>Infrastructure Categories to Onboard</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1.5">
+                                {INFRA_TYPES.map((t) => (
+                                    <label key={t.infraCategory} className={`flex items-center gap-2 rounded-lg border p-2 text-xs cursor-pointer transition-colors ${infraCategories.has(t.infraCategory) ? 'border-purple bg-purple/5 text-purple' : 'border-border text-foreground-muted hover:border-purple/40'}`}>
+                                        <input type="checkbox" checked={infraCategories.has(t.infraCategory)} onChange={() => toggleInfraCategory(t.infraCategory)} className="accent-purple" />
+                                        {t.label}
+                                    </label>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-foreground-muted mt-1.5">Recorded on the organisation record — persisted, not just a selection on this screen.</p>
+                        </div>
+                        <CollectorWalkthrough orgId={draftOrgId} />
                         <div>
                             <label className={labelCls}>Wazuh Agent Group Name</label>
                             <input value={wazuhGroup} onChange={(e) => setWazuhGroup(e.target.value)} placeholder="e.g. zenith-bank" className={`${inputCls} font-mono`} />
@@ -512,7 +668,7 @@ export function OnboardingWizard() {
                     <ArrowLeft size={14} /> Back
                 </button>
                 {step < STEPS.length ? (
-                    <button onClick={() => canAdvance() && setStep((s) => Math.min(STEPS.length, s + 1))} disabled={!canAdvance()}
+                    <button onClick={() => void advance()} disabled={!canAdvance()}
                         className="flex items-center gap-1.5 text-xs font-bold text-white bg-purple rounded-lg px-4 py-2 hover:bg-purple-hover transition-colors disabled:opacity-50">
                         Next <ArrowRight size={14} />
                     </button>

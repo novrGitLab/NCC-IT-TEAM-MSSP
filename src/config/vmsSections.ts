@@ -1,8 +1,8 @@
-// The eight VMS sections (redesign, phase P20) and their pages. The sidebar shows one item per
-// section (config/nav.ts); app/admin/vms/layout.tsx shows the section's pages as tabs.
+// The VMS sections and their pages. The sidebar shows one item per section (config/nav.ts);
+// app/admin/vms/layout.tsx shows the section's pages as tabs.
 // managerOnly is presentation only: those pages read endpoints the backend restricts to vms:scope.
 import {
-    Radar, Boxes, Bug, Gauge as GaugeIcon, Wrench, Activity, FileBarChart, Cog, type LucideIcon,
+    Radar, Boxes, Bug, Gauge as GaugeIcon, Wrench, Activity, FileBarChart, type LucideIcon,
 } from 'lucide-react';
 
 export interface VmsPage { href: string; label: string }
@@ -14,7 +14,6 @@ export const VMS_SECTIONS: VmsSection[] = [
         id: 'assets', label: 'Asset Management', href: '/admin/vms/assets', icon: Boxes,
         pages: [
             { href: '/admin/vms/assets', label: 'Asset Inventory' },
-            { href: '/admin/vms/discovery', label: 'Asset Discovery' },
             { href: '/admin/vms/attack-surface', label: 'Attack Surface' },
             { href: '/admin/vms/services', label: 'Services & Technologies' },
         ],
@@ -55,14 +54,6 @@ export const VMS_SECTIONS: VmsSection[] = [
         pages: [
             { href: '/admin/vms/report', label: 'Reports' },
             { href: '/admin/vms/audit', label: 'Audit Trail' },
-        ],
-    },
-    {
-        id: 'operations', label: 'Scanner Operations', href: '/admin/vms/operations', icon: Cog, managerOnly: true,
-        pages: [
-            { href: '/admin/vms/operations', label: 'Scanner Integrations' },
-            { href: '/admin/vms/operations/workers', label: 'Worker Health' },
-            { href: '/admin/vms/operations/config', label: 'Scan Policies & Configuration' },
         ],
     },
 ];
