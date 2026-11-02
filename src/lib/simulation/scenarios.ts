@@ -55,5 +55,7 @@ export function buildDefaultState(): SimState {
         aiDiagnostic: { verifiedModel: null, verifiedAt: null, lastError: null, modelsTried: [] },
 
         auditLog: [],
+
+        handoverLogs: [],
     };
 }

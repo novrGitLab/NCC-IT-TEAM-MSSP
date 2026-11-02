@@ -40,7 +40,7 @@ function ensureDataDir(): void {
 function assertValidState(state: unknown): state is SimState {
     if (!state || typeof state !== 'object') throw new Error('Invalid simulation state: not an object');
     const s = state as Record<string, unknown>;
-    const requiredArrays = ['assets', 'findings', 'scans', 'extraTasks', 'organisations', 'collectors', 'ingestionEvents', 'postureEvents', 'users', 'sessions', 'invites', 'auditLog', 'events', 'aiArtifacts'];
+    const requiredArrays = ['assets', 'findings', 'scans', 'extraTasks', 'organisations', 'collectors', 'ingestionEvents', 'postureEvents', 'users', 'sessions', 'invites', 'auditLog', 'events', 'aiArtifacts', 'handoverLogs'];
     for (const key of requiredArrays) {
         if (!Array.isArray(s[key])) throw new Error(`Invalid simulation state: ${key} must be an array`);
     }

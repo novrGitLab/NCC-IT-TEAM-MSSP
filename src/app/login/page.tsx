@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import type { CredentialResponse } from '@react-oauth/google';
 import { apiUrl, apiFetch } from '@/lib/api';
@@ -23,8 +22,16 @@ import { refreshAdminUserCache } from '@/lib/admin-auth';
 // appear verbatim to be replaced.
 const googleOAuthEnabled = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true';
 
+/** Where to land after sign-in — honors middleware's `?next=` (the page the user originally
+ *  tried to reach) so a protected deep link survives a login redirect, falling back to the
+ *  dashboard. Read directly from the URL (no useSearchParams/Suspense boundary needed for this). */
+function postLoginTarget(): string {
+    if (typeof window === 'undefined') return '/admin/dashboard';
+    const next = new URLSearchParams(window.location.search).get('next');
+    return next && next.startsWith('/admin') ? next : '/admin/dashboard';
+}
+
 export default function AdminLoginPage() {
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -53,16 +60,16 @@ export default function AdminLoginPage() {
             }
             localStorage.setItem('admin_token', data.token);
             void refreshAdminUserCache();
-            router.push('/admin/dashboard');
-            // Deliberately NOT resetting `submitting` here (no `finally`) — router.push()
-            // returns as soon as the navigation is *requested*, not once /admin/dashboard has
-            // actually rendered (confirmed live: on a slow/first-compile transition this can
-            // take several seconds). Clearing the disabled/"Signing in…" state immediately
-            // flips the button back to normal while the app is still mid-navigation, which
-            // reads as "nothing happened" / login silently failing even though it succeeded —
-            // this is what was actually being reported as "not redirecting." Leaving the button
-            // disabled through the transition (it unmounts with the page anyway once
-            // /admin/dashboard takes over) fixes that without touching the request/token logic.
+            // A hard navigation, not router.push(): the Next.js App Router can serve a cached RSC
+            // payload for the target route from before login (middleware had redirected it to
+            // /login on an earlier visit), which replays that stale redirect even though the
+            // session cookie this request just set is now present — confirmed live, this is what
+            // was actually causing "login succeeds but bounces straight back to /login". A full
+            // navigation always re-issues the request (and re-runs middleware) fresh.
+            window.location.href = postLoginTarget();
+            // Deliberately NOT resetting `submitting` here (no `finally`) — the button unmounts
+            // with the page once the browser navigates away; clearing it first would flip it back
+            // to normal while still mid-navigation, reading as "nothing happened".
         } catch {
             setError('Invalid credentials');
             setSubmitting(false);
@@ -84,7 +91,7 @@ export default function AdminLoginPage() {
             }
             localStorage.setItem('admin_token', data.token);
             void refreshAdminUserCache();
-            router.push('/admin/dashboard');
+            window.location.href = postLoginTarget();
         } catch {
             setError('Google sign-in failed. Please try again.');
         }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadState } from '@/lib/simulation/store';
 import { verifyPassword } from '@/lib/simulation/auth/users';
 import { createSession } from '@/lib/simulation/auth/session';
-import { PORTAL_COOKIE } from '@/lib/simulation/auth/guard';
+import { PORTAL_COOKIE, isHttpsRequest } from '@/lib/simulation/auth/guard';
 
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
@@ -25,6 +25,6 @@ export async function POST(req: NextRequest) {
             portalRole: 'portal_user', wazuhGroup: org?.wazuh_group ?? null,
         },
     });
-    res.cookies.set(PORTAL_COOKIE, cookieValue, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 12 * 3600 });
+    res.cookies.set(PORTAL_COOKIE, cookieValue, { httpOnly: true, secure: isHttpsRequest(req), sameSite: 'lax', path: '/', maxAge: 12 * 3600 });
     return res;
 }

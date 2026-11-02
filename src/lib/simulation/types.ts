@@ -35,6 +35,9 @@ export interface SessionRecord { id: string; userId: string; createdAt: string; 
 export interface InviteRecord {
     token: string; email: string; role: UserRole; orgId: string | null; invitedBy: string;
     createdAt: string; expiresAt: string; acceptedAt: string | null;
+    /** Job function the invite was issued for (src/lib/team/invite-functions.ts). Recorded only. */
+    jobFunction: string;
+    scope: Record<string, string>;
 }
 
 export interface OrgFramework { framework: string; enabled: boolean; initialScore: number }
@@ -92,6 +95,24 @@ export interface AiDiagnosticResult {
 
 export interface AuditEntry { id: string; at: string; actor: string; action: string; details?: Record<string, unknown>; }
 
+export interface HandoverLogRecord {
+    id: string;
+    shiftStart: string;
+    shiftEnd: string;
+    analystOff: string;
+    analystOn: string;
+    casesReceived: number;
+    casesResolved: number;
+    casesPending: number;
+    criticalCases: string[];
+    ongoingCases: string[];
+    watchPriority: 'Low' | 'Medium' | 'High';
+    watchItems: string;
+    notes: string;
+    submittedBy: string;
+    submittedAt: string;
+}
+
 export interface AiArtifactRecord {
     id: string;
     purpose: string;
@@ -139,6 +160,9 @@ export interface SimState {
     aiDiagnostic: AiDiagnosticResult;
 
     auditLog: AuditEntry[];
+
+    // SecOps management (src/app/api/secops/handover, src/components/features/ShiftHandover.tsx)
+    handoverLogs: HandoverLogRecord[];
 }
 
-export const SIM_STATE_VERSION = 1;
+export const SIM_STATE_VERSION = 2;

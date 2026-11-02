@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { UserPlus, Search } from 'lucide-react';
 import { useTeamPresence, PresenceStats, PresenceCards, relativeTime } from '@/components/features/TeamPresence';
 import { apiUrl, apiFetch } from '@/lib/api';
+import { JOB_FUNCTIONS, JOB_FUNCTION_IDS, isJobFunction, type JobFunction } from '@/lib/team/invite-functions';
 
 // Team — live status on top (heartbeat presence), then the roster. The roster used to be a
 // hardcoded mock list; it is now the real platform_users table, same layout.
 
-type Role = 'super_admin' | 'soc_manager' | 'analyst' | 'executive' | 'viewer';
 const ROLE_BADGE: Record<string, string> = {
     super_admin: 'bg-purple/10 text-purple',
     soc_manager: 'bg-blue/10 text-blue',
@@ -20,32 +20,55 @@ const ROLE_LABEL: Record<string, string> = {
     super_admin: 'Super Admin', soc_manager: 'SOC Manager', analyst: 'Analyst', executive: 'Executive', viewer: 'Viewer',
 };
 
+interface InviteResult {
+    sent: boolean;
+    reason?: string;
+    invite_url?: string;
+    invite?: { email: string; jobFunction: string; role: string; scope: Record<string, string> };
+}
+
 export default function TeamPage() {
     const { data, error, now } = useTeamPresence();
     const [search, setSearch] = useState('');
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteRole, setInviteRole] = useState<Role>('analyst');
+    const [jobFunction, setJobFunction] = useState<JobFunction>('soc_analyst');
+    const [scope, setScope] = useState<Record<string, string>>({});
     const [inviteBusy, setInviteBusy] = useState(false);
     const [inviteError, setInviteError] = useState<string | null>(null);
-    const [inviteResult, setInviteResult] = useState<{ sent: boolean; reason?: string; invite_url?: string } | null>(null);
+    const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
+
+    const def = JOB_FUNCTIONS[jobFunction];
+    const missingRequired = def.fields.some((f) => f.required && !(scope[f.key] ?? '').trim());
 
     const closeInviteModal = () => {
         setShowInviteModal(false);
         setInviteEmail('');
+        setJobFunction('soc_analyst');
+        setScope({});
         setInviteError(null);
         setInviteResult(null);
     };
+
+    const chooseJobFunction = (value: string) => {
+        if (isJobFunction(value)) { setJobFunction(value); setScope({}); setInviteError(null); }
+    };
+
+    const setField = (key: string, value: string) => setScope((s) => ({ ...s, [key]: value }));
 
     const sendInvite = async () => {
         setInviteBusy(true);
         setInviteError(null);
         setInviteResult(null);
         try {
-            const res = await apiFetch(apiUrl('/api/invites'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: inviteEmail, role: inviteRole }) });
-            const data = await res.json().catch(() => null);
-            if (!res.ok) { setInviteError(data?.error ?? `Could not send the invitation (HTTP ${res.status}).`); return; }
-            setInviteResult(data);
+            const res = await apiFetch(apiUrl('/api/invites'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: inviteEmail, jobFunction, scope }),
+            });
+            const body = await res.json().catch(() => null);
+            if (!res.ok) { setInviteError(body?.error ?? `Could not create the invitation (HTTP ${res.status}).`); return; }
+            setInviteResult(body);
         } catch {
             setInviteError('Could not reach the server.');
         } finally {
@@ -58,6 +81,8 @@ export default function TeamPage() {
         u.name.toLowerCase().includes(search.toLowerCase()) ||
         u.email.toLowerCase().includes(search.toLowerCase())
     );
+
+    const selectCls = 'w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card focus:outline-none focus:border-purple';
 
     return (
         <div className="space-y-5">
@@ -165,27 +190,44 @@ export default function TeamPage() {
                 </table>
             </div>
             <p className="text-[10px] text-foreground-muted">
-                Roster from the platform_users table. Role changes, removal and invitations are not persisted yet.
+                Roster from the simulation state. Role changes and removal are not available yet. Invitations are recorded locally; no email is sent unless Brevo is configured.
             </p>
 
             {/* Invite Modal */}
             {showInviteModal && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-2xl shadow-xl w-full max-w-md border border-border">
+                    <div className="bg-card rounded-2xl shadow-xl w-full max-w-md border border-border max-h-[90vh] flex flex-col">
                         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                             <h2 className="font-bold text-base text-foreground">Invite Team Member</h2>
                             <button onClick={closeInviteModal} className="text-foreground-muted hover:text-foreground" aria-label="Close">✕</button>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-6 space-y-4 overflow-y-auto">
                             {inviteResult ? (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
+                                    <p className="text-sm font-bold text-foreground">Invitation recorded for {inviteResult.invite?.email ?? inviteEmail}</p>
+                                    {inviteResult.invite && (
+                                        <dl className="text-xs grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 bg-card-muted rounded-lg p-3">
+                                            <dt className="text-foreground-muted">Job function</dt>
+                                            <dd className="text-foreground">{JOB_FUNCTIONS[inviteResult.invite.jobFunction as JobFunction]?.label ?? inviteResult.invite.jobFunction}</dd>
+                                            <dt className="text-foreground-muted">Platform role</dt>
+                                            <dd className="text-foreground">{ROLE_LABEL[inviteResult.invite.role] ?? inviteResult.invite.role}</dd>
+                                            {Object.entries(inviteResult.invite.scope).map(([k, v]) => {
+                                                const field = JOB_FUNCTIONS[inviteResult.invite!.jobFunction as JobFunction]?.fields.find((f) => f.key === k);
+                                                return (
+                                                    <div key={k} className="contents">
+                                                        <dt className="text-foreground-muted">{field?.label ?? k}</dt>
+                                                        <dd className="text-foreground">{v}</dd>
+                                                    </div>
+                                                );
+                                            })}
+                                        </dl>
+                                    )}
                                     {inviteResult.sent ? (
-                                        <p className="text-sm text-foreground">Invitation sent to <strong>{inviteEmail}</strong>.</p>
+                                        <p className="text-xs text-foreground-muted">An invitation email was sent.</p>
                                     ) : (
                                         <>
-                                            <p className="text-sm text-foreground">
-                                                The invitation was created, but no email could be sent{inviteResult.reason ? ` (${inviteResult.reason})` : ''}.
-                                                Share this link with {inviteEmail} directly:
+                                            <p className="text-xs text-foreground-muted">
+                                                No email was sent{inviteResult.reason ? ` (${inviteResult.reason})` : ''}. Share this link with {inviteResult.invite?.email ?? inviteEmail} directly:
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <input readOnly value={inviteResult.invite_url ?? ''} className="flex-1 border border-border rounded-lg px-3 py-2 text-xs font-mono bg-card-muted" />
@@ -214,21 +256,45 @@ export default function TeamPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="invite-role" className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
-                                            Role
+                                        <label htmlFor="invite-function" className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
+                                            Job function
                                         </label>
-                                        <select
-                                            id="invite-role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as Role)}
-                                            className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card focus:outline-none focus:border-purple"
-                                        >
-                                            <option value="analyst">SOC Analyst — can view and action alerts</option>
-                                            <option value="soc_manager">SOC Manager — manages the team and playbooks</option>
-                                            <option value="executive">Executive — reports and posture</option>
-                                            <option value="super_admin">Super Admin — full platform access</option>
+                                        <select id="invite-function" value={jobFunction} onChange={(e) => chooseJobFunction(e.target.value)} className={selectCls}>
+                                            {JOB_FUNCTION_IDS.map((id) => <option key={id} value={id}>{JOB_FUNCTIONS[id].label}</option>)}
                                         </select>
+                                        <p className="text-[11px] text-foreground-muted mt-1.5">{def.summary}</p>
                                     </div>
+
+                                    {def.fields.map((field) => (
+                                        <div key={field.key}>
+                                            {field.key === 'full_access_confirmed' ? (
+                                                <label className="flex items-start gap-2 text-xs text-foreground">
+                                                    <input type="checkbox" className="mt-0.5" checked={scope[field.key] === 'confirmed'}
+                                                        onChange={(e) => setField(field.key, e.target.checked ? 'confirmed' : '')} />
+                                                    <span>{field.label}</span>
+                                                </label>
+                                            ) : (
+                                                <>
+                                                    <label htmlFor={`scope-${field.key}`} className="block text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
+                                                        {field.label}{field.required ? ' *' : ''}
+                                                    </label>
+                                                    {field.options ? (
+                                                        <select id={`scope-${field.key}`} value={scope[field.key] ?? ''} onChange={(e) => setField(field.key, e.target.value)} className={selectCls}>
+                                                            <option value="">Select…</option>
+                                                            {field.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                                                        </select>
+                                                    ) : (
+                                                        <input id={`scope-${field.key}`} value={scope[field.key] ?? ''} onChange={(e) => setField(field.key, e.target.value)}
+                                                            placeholder={field.help} className={selectCls} />
+                                                    )}
+                                                    {field.help && field.options === undefined && <p className="text-[11px] text-foreground-muted mt-1">{field.help}</p>}
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+
                                     <div className="bg-[#F1F6FF] border border-[#DBEAFE] rounded-lg p-3 text-xs text-foreground-muted">
-                                        Evaluation environment — the invited account is created in the simulation state only; no real production access is granted.
+                                        The invitation and its scope are recorded locally. Access is granted by the platform role only; the scoped fields are not enforced yet.
                                     </div>
                                     {inviteError && <p role="alert" className="text-xs text-red-500 font-semibold">{inviteError}</p>}
                                 </>
@@ -241,10 +307,10 @@ export default function TeamPage() {
                             {!inviteResult && (
                                 <button
                                     onClick={() => void sendInvite()}
-                                    disabled={inviteBusy || !inviteEmail}
+                                    disabled={inviteBusy || !inviteEmail || missingRequired}
                                     className="text-sm font-bold bg-orange hover:bg-orange-hover text-white px-5 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {inviteBusy ? 'Sending…' : 'Send Invitation'}
+                                    {inviteBusy ? 'Recording…' : 'Create Invitation'}
                                 </button>
                             )}
                         </div>

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import type { CredentialResponse } from '@react-oauth/google';
 import { setPortalSession } from '@/lib/portal-auth';
@@ -22,8 +21,15 @@ const GoogleLogin = dynamic(
 // See frontend/src/app/login/page.tsx for why this is read as a full static expression.
 const googleOAuthEnabled = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true';
 
+// See src/app/login/page.tsx's postLoginTarget() for why this reads ?next= directly rather than
+// via useSearchParams (no Suspense boundary needed) and why it's used with a hard navigation.
+function postLoginTarget(): string {
+    if (typeof window === 'undefined') return '/client/vms';
+    const next = new URLSearchParams(window.location.search).get('next');
+    return next && next.startsWith('/client') ? next : '/client/vms';
+}
+
 export default function ClientLoginPage() {
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -61,16 +67,18 @@ export default function ClientLoginPage() {
                 if (data?.code === 'PORTAL_NOT_CONFIGURED') {
                     setPortalConfigured(false);
                     setError(null);
-                    return;
+                } else {
+                    setError('Invalid credentials. Contact your security team.');
                 }
-                setError('Invalid credentials. Contact your security team.');
+                setSubmitting(false);
                 return;
             }
             setPortalSession(data.token, data.user);
-            router.push('/client/vms');
+            // Hard navigation, not router.push() — see src/app/login/page.tsx for why. Deliberately
+            // leaves `submitting` true: the page unmounts once the browser navigates away.
+            window.location.href = postLoginTarget();
         } catch {
             setError('Invalid credentials. Contact your security team.');
-        } finally {
             setSubmitting(false);
         }
     };
@@ -89,7 +97,7 @@ export default function ClientLoginPage() {
                 return;
             }
             setPortalSession(data.token, data.user);
-            router.push('/client/vms');
+            window.location.href = postLoginTarget();
         } catch {
             setError('Google sign-in failed. Please try again.');
         }

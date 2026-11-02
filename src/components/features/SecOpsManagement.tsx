@@ -1,16 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Crosshair, ClipboardList, MessageSquare } from 'lucide-react';
+import { LayoutGrid, Crosshair, ClipboardList, MessageSquare } from 'lucide-react';
+import { SecOpsOverview } from './SecOpsOverview';
 import { ThreatHunting } from './ThreatHunting';
 import { ShiftHandover } from './ShiftHandover';
 import { TeamCommunication } from './TeamCommunication';
 
-// Security Ops Management — Threat Hunting, Shift Handover and Team Communication as tabs.
-// Threat Hunting is also reachable directly at /admin/secops/hunting. The Reports and Playbooks
-// tabs were removed in the 2026-10 cleanup (PlaybookManagement.tsx is kept, unmounted, for
-// re-homing playbook editing later).
+// Security Ops Management — Overview, Threat Hunting, Shift Handover and Team Communication as
+// tabs. Threat Hunting is also reachable directly at /admin/secops/hunting. The Reports and
+// Playbooks tabs were removed in the 2026-10 cleanup (PlaybookManagement.tsx is kept, unmounted,
+// for re-homing playbook editing later).
 const TABS = [
+    { id: 'overview', label: 'Overview', icon: LayoutGrid },
     { id: 'hunting', label: 'Threat Hunting', icon: Crosshair },
     { id: 'handover', label: 'Shift Handover', icon: ClipboardList },
     { id: 'broadcast', label: 'Team Communication', icon: MessageSquare },
@@ -18,7 +20,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 export function SecOpsManagement() {
-    const [activeTab, setActiveTab] = useState<TabId>('hunting');
+    const [activeTab, setActiveTab] = useState<TabId>('overview');
 
     return (
         <div className="space-y-4">
@@ -45,6 +47,7 @@ export function SecOpsManagement() {
                 })}
             </div>
 
+            {activeTab === 'overview' && <SecOpsOverview />}
             {activeTab === 'hunting' && <ThreatHunting />}
             {activeTab === 'handover' && <ShiftHandover />}
             {activeTab === 'broadcast' && <TeamCommunication />}

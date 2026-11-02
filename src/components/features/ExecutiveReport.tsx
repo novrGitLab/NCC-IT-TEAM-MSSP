@@ -1,121 +1,142 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { apiUrl, apiFetch } from '@/lib/api';
+// Executive Dashboard — reuses the same shared simulation data every other screen reads
+// (GET /api/vms/dashboard, /api/posture/summary, /api/collectors, /api/cases), the existing VMS
+// chart/table/kit components, and the existing PDF export helper. Every figure here is counted
+// from those same stored records; nothing is estimated or fabricated independently of them.
+
+import Link from 'next/link';
+import { ShieldCheck, Server, Bug, Wrench, Siren, Radio, ArrowRight } from 'lucide-react';
 import { exportPageAsPDF } from '@/lib/exportPDF';
+import { PageHeader, KpiCard, PriorityBadge, SeverityBadge, RiskScore, btn, relTime } from './vms/kit';
+import { Card, SectionTitle, StatusPill, type Tone } from './vms/ui';
+import { ChartCard, TimeChart, Donut, BarList, Legend, type Series } from './vms/charts';
+import { DataTable, type Column } from './vms/table';
+import { useVmsData } from './vms/data';
 
-// Board/CISO-facing summary — real data only, composed from endpoints already built
-// elsewhere (compliance, cases, alerts, Wazuh agents). No fabricated "Overall Score: 74" or "vs last
-// month" trend arrow — this backend has no historical snapshot mechanism to compare against,
-// so a trend number here would be invented, not measured. The overall score is a genuine
-// average of assessed compliance frameworks; "Not yet assessed" is the honest state until at
-// least one framework has real control assessments.
+interface Dashboard {
+    kpis: { total_assets: number; critical_open: number; critical_exposures: number; overdue_tasks: number; remediation_rate: number | null; risk_mean: number | null };
+    charts: {
+        severity: Record<string, number>; assets_by_criticality: Record<string, number>; tasks: Record<string, number>;
+        risk: { day: string; risk_mean: number; risk_max: number | null }[];
+        exposure: { day: string; critical_exposures: number | null; internet_open: number; kev_open: number }[];
+    };
+    lists: {
+        highest_risk_assets: { asset_id: string; value: string; open: number; by_severity: Record<string, number>; max_risk: number; exposure: string | null; criticality: string | null; asset_type: string | null }[];
+        overdue_tasks: { id: string; title: string; owner: string | null; due_at: string; status: string; finding: { id: string; title: string; asset_value: string; priority: string | null } | null }[];
+    };
+}
+interface PostureSummary { total_assets: number; by_posture: Record<'secure' | 'monitored' | 'at_risk' | 'critical', number> }
+interface CollectorSummary { collectors: { id: string; status: string }[] }
+interface CaseSummary { summary?: { active: number; critical: number } }
+type HighestRiskAsset = Dashboard['lists']['highest_risk_assets'][number];
+type OverdueTask = Dashboard['lists']['overdue_tasks'][number];
 
-interface Framework { shortName: string; score: number; assessed: number }
-interface CaseKpis { active: number; critical: number }
-interface AgentCounts { total: number; active: number; disconnected: number }
+const SEV_SERIES: Series[] = [
+    { key: 'critical', label: 'Critical', token: '--vz-sev-critical' }, { key: 'high', label: 'High', token: '--vz-sev-high' },
+    { key: 'medium', label: 'Medium', token: '--vz-sev-medium' }, { key: 'low', label: 'Low', token: '--vz-sev-low' }, { key: 'info', label: 'Informational', token: '--vz-sev-info' },
+];
+const RISK_SERIES: Series[] = [{ key: 'risk_mean', label: 'Mean risk score', token: '--vz-prog-4' }];
+const EXPOSURE_SERIES: Series[] = [{ key: 'critical_exposures', label: 'Critical exposures', token: '--vz-critical' }, { key: 'internet_open', label: 'Internet-facing open', token: '--vz-warning' }];
+const CRIT = ['critical', 'high', 'medium', 'low'] as const;
+const POSTURE_LABEL: Record<string, string> = { secure: 'Secure', monitored: 'Monitored', at_risk: 'At risk', critical: 'Critical' };
+const POSTURE_TOKEN: Record<string, Series['token']> = { secure: '--vz-good', monitored: '--vz-neutral', at_risk: '--vz-warning', critical: '--vz-critical' };
 
 export function ExecutiveReport() {
-    const [frameworks, setFrameworks] = useState<Framework[] | null>(null);
-    const [caseKpis, setCaseKpis] = useState<CaseKpis | null>(null);
-    const [agents, setAgents] = useState<AgentCounts | null>(null);
-    const [criticalAlerts, setCriticalAlerts] = useState<number | null>(null);
+    const { load, data: d, at } = useVmsData<Dashboard>('/api/vms/dashboard?days=30');
+    const posture = useVmsData<PostureSummary>('/api/posture/summary');
+    const collectors = useVmsData<CollectorSummary>('/api/collectors');
+    const cases = useVmsData<CaseSummary>('/api/cases');
+    const now = at ?? 0;
+    const loading = load.state === 'loading' && !d;
 
-    useEffect(() => {
-        apiFetch(apiUrl('/api/compliance?orgId=1'), { cache: 'no-store', signal: AbortSignal.timeout(10000) })
-            .then((r) => r.json()).then((d) => setFrameworks(Array.isArray(d) ? d : [])).catch(() => setFrameworks([]));
-        apiFetch(apiUrl('/api/cases?limit=1'), { cache: 'no-store', signal: AbortSignal.timeout(10000) })
-            .then((r) => r.json()).then((d) => setCaseKpis(d?.summary ? { active: d.summary.active, critical: d.summary.critical } : null)).catch(() => setCaseKpis(null));
-        // Endpoint counts from the Wazuh manager — the same source as every other agent figure.
-        // An unreachable manager leaves this null ("—"), not 0: zero endpoints is a finding.
-        apiFetch(apiUrl('/api/wazuh/status'), { cache: 'no-store', signal: AbortSignal.timeout(10000) })
-            .then((r) => r.json())
-            .then((d) => setAgents(d?.connected ? { total: d.agent_count ?? 0, active: d.active_agents ?? 0, disconnected: d.disconnected_agents ?? 0 } : null))
-            .catch(() => setAgents(null));
-        apiFetch(apiUrl('/api/wazuh/alerts-indexer?minLevel=7&range=24h'), { cache: 'no-store', signal: AbortSignal.timeout(10000) })
-            .then((r) => r.json()).then((d) => setCriticalAlerts(typeof d?.criticalCount === 'number' ? d.criticalCount : 0)).catch(() => setCriticalAlerts(0));
-    }, []);
+    const operationalCollectors = collectors.data?.collectors.filter((c) => c.status === 'operational').length ?? 0;
+    const totalCollectors = collectors.data?.collectors.length ?? 0;
+    const atRiskOrCritical = posture.data ? posture.data.by_posture.at_risk + posture.data.by_posture.critical : null;
+    const postureScore = posture.data && posture.data.total_assets > 0
+        ? Math.round(((posture.data.by_posture.secure + posture.data.by_posture.monitored) / posture.data.total_assets) * 100)
+        : null;
 
-    const assessedFrameworks = frameworks?.filter((f) => f.assessed > 0) ?? [];
-    const overallScore = assessedFrameworks.length > 0 ? Math.round(assessedFrameworks.reduce((s, f) => s + f.score, 0) / assessedFrameworks.length) : null;
-    const scoreLabel = overallScore === null ? '—' : String(overallScore);
-    const scoreQualifier = overallScore === null ? 'Not yet assessed' : overallScore >= 80 ? 'Strong' : overallScore >= 60 ? 'Good' : overallScore >= 40 ? 'Needs attention' : 'At risk';
+    const criticalAssetCols: Column<HighestRiskAsset>[] = [
+        { key: 'value', header: 'Asset', className: 'min-w-[160px]', render: (a) => <Link href={`/admin/vms/assets/${a.asset_id}`} className="font-mono font-semibold text-purple hover:underline">{a.value}</Link> },
+        { key: 'type', header: 'Type', render: (a) => <span className="text-[11px] capitalize">{a.asset_type ?? '—'}</span> },
+        { key: 'criticality', header: 'Criticality', sort: (a) => CRIT.indexOf((a.criticality ?? 'low') as typeof CRIT[number]), render: (a) => <span className="text-[11px] font-semibold capitalize">{a.criticality ?? '—'}</span> },
+        { key: 'exposure', header: 'Exposure', render: (a) => <span className="text-[11px] capitalize">{a.exposure ?? '—'}</span> },
+        { key: 'vulns', header: 'Vulnerabilities', sort: (a) => a.open, render: (a) => <span className="tabular-nums font-semibold">{a.open}</span> },
+        { key: 'risk', header: 'Risk', sort: (a) => a.max_risk, render: (a) => <RiskScore score={a.max_risk} /> },
+        { key: 'action', header: '', render: (a) => <Link href={`/admin/vms/assets/${a.asset_id}`} className={btn('ghost')}>View <ArrowRight className="w-3 h-3" aria-hidden /></Link> },
+    ];
+    const remediationCols: Column<OverdueTask>[] = [
+        { key: 'title', header: 'Vulnerability', className: 'min-w-[200px]', render: (t) => <span className="font-semibold text-foreground">{t.finding?.title ?? t.title}</span> },
+        { key: 'asset', header: 'Affected Asset', render: (t) => <span className="font-mono text-[11px]">{t.finding?.asset_value ?? '—'}</span> },
+        { key: 'risk', header: 'Risk', render: (t) => <PriorityBadge priority={t.finding?.priority ?? null} /> },
+        { key: 'owner', header: 'Owner', render: (t) => <span className="text-[11px] text-foreground-muted">{t.owner ?? 'Unassigned'}</span> },
+        { key: 'due', header: 'Deadline', sort: (t) => t.due_at, render: (t) => <span className="text-[11px] text-red font-semibold">{relTime(t.due_at, now)}</span> },
+        { key: 'status', header: 'Status', render: (t) => <StatusPill tone="warning" label={t.status.replace(/_/g, ' ')} /> },
+    ];
 
     return (
         <div id="executive-report" className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-black text-foreground">Executive Security Report</h1>
-                <p className="text-sm text-foreground-muted">
-                    {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — NCC SOC Security Posture
-                </p>
-            </div>
+            <PageHeader icon={ShieldCheck} title="Executive Dashboard"
+                description="Organisational security posture — every figure below is counted from the same records Vulnerability Management, Security Operations and Collector Management read, for the last 30 days."
+                actions={<button onClick={() => exportPageAsPDF('executive-report', 'executive-dashboard', 'Executive Dashboard')} className={btn('secondary', 'md')}>Export Report</button>} />
 
-            <div className="rounded-2xl p-8 text-white" style={{ background: 'linear-gradient(135deg, #153F83, #2563EB)' }}>
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <div className="text-sm font-medium opacity-80 mb-2">Overall Security Score</div>
-                        <div className="text-7xl font-black">{scoreLabel}{overallScore !== null && <span className="text-2xl font-normal opacity-70">/100</span>}</div>
-                        <div className="text-sm opacity-80 mt-2">{scoreQualifier}</div>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-xs opacity-70">Based on {assessedFrameworks.length} assessed framework{assessedFrameworks.length === 1 ? '' : 's'}</div>
-                        <div className="text-xs opacity-70 mt-1">No historical trend data available yet</div>
-                    </div>
-                </div>
-            </div>
+            {load.state === 'error' ? <p className="text-xs text-red">Could not load executive data.</p> : (
+                <>
+                    <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <KpiCard label="Security posture score" value={postureScore} suffix={postureScore !== null ? '%' : undefined} reason="Loading" icon={ShieldCheck} tone={postureScore !== null ? (postureScore >= 80 ? 'good' : postureScore >= 50 ? 'warning' : 'critical') : undefined} sub="Share of assets secure or monitored" />
+                        <KpiCard label="Total monitored assets" value={d?.kpis.total_assets} reason="Loading" icon={Server} href="/admin/vms/assets" />
+                        <KpiCard label="Critical assets requiring attention" value={atRiskOrCritical} reason="Loading" tone={atRiskOrCritical ? 'critical' : 'good'} href="/admin/vms/assets" sub="At-risk or critical posture" />
+                        <KpiCard label="Open critical vulnerabilities" value={d?.kpis.critical_open} reason="Loading" icon={Bug} tone={d && d.kpis.critical_open > 0 ? 'critical' : 'good'} href="/admin/vms/findings?severity=critical" />
+                        <KpiCard label="Patch compliance" value={d?.kpis.remediation_rate !== null && d?.kpis.remediation_rate !== undefined ? Math.round(d.kpis.remediation_rate * 100) : null} suffix="%" reason="No findings verified yet" icon={Wrench} href="/admin/vms/remediation" />
+                        <KpiCard label="Overdue remediation" value={d?.kpis.overdue_tasks} reason="Loading" tone={d && d.kpis.overdue_tasks > 0 ? 'warning' : 'good'} href="/admin/vms/remediation?view=table&overdue=1" />
+                        <KpiCard label="Active incidents" value={cases.data?.summary?.active} reason="Loading" icon={Siren} href="/admin/secops/cases" sub={cases.data?.summary ? `${cases.data.summary.critical} critical` : undefined} />
+                        <KpiCard label="Collector coverage" text={totalCollectors ? `${operationalCollectors} / ${totalCollectors}` : undefined} value={totalCollectors ? undefined : null} reason="No collectors yet" icon={Radio} href="/admin/onboarding/collectors" tone={totalCollectors ? (operationalCollectors === totalCollectors ? 'good' : 'warning') : undefined} sub="Operational collectors" />
+                    </section>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Endpoints Monitored', value: agents?.total ?? '—', sub: agents ? `${agents.active} online · ${agents.disconnected} offline` : 'Wazuh unreachable' },
-                    { label: 'Open Cases', value: caseKpis?.active ?? '—' },
-                    { label: 'Critical Cases (open)', value: caseKpis?.critical ?? '—' },
-                    { label: 'Critical Alerts (24h)', value: criticalAlerts ?? '—' },
-                ].map((s) => (
-                    <div key={s.label} className="bg-card border border-border rounded-xl p-5">
-                        <div className="text-3xl font-black text-foreground">{s.value}</div>
-                        <div className="text-xs text-foreground-muted mt-1">{s.label}</div>
-                        {'sub' in s && s.sub && <div className="text-[10px] text-foreground-muted/80 mt-0.5">{s.sub}</div>}
-                    </div>
-                ))}
-            </div>
+                    <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <ChartCard title="Vulnerability severity distribution" loading={loading}>
+                            {d && <Donut label="Open findings by severity" centerLabel="open" slices={SEV_SERIES.map((s) => ({ key: s.key, label: s.label, token: s.token, value: d.charts.severity[s.key] ?? 0, href: `/admin/vms/findings?severity=${s.key}` }))} />}
+                        </ChartCard>
+                        <ChartCard title="Security posture" loading={posture.load.state === 'loading' && !posture.data}>
+                            {posture.data && <Donut label="Assets by posture" centerLabel="assets" slices={(['secure', 'monitored', 'at_risk', 'critical'] as const).map((k) => ({ key: k, label: POSTURE_LABEL[k], token: POSTURE_TOKEN[k], value: posture.data!.by_posture[k] ?? 0 }))} />}
+                        </ChartCard>
+                        <ChartCard title="Asset criticality breakdown" loading={loading}>
+                            {d && <BarList label="Assets by criticality" items={CRIT.map((c, i) => ({ key: c, label: c[0].toUpperCase() + c.slice(1), value: d.charts.assets_by_criticality[c] ?? 0, token: (['--vz-prog-4', '--vz-prog-3', '--vz-prog-2', '--vz-prog-1'] as const)[i], href: `/admin/vms/assets?criticality=${c}` }))} />}
+                        </ChartCard>
+                        <ChartCard className="xl:col-span-2" title="Security posture trend" hint="Daily snapshot of the mean open-finding risk score." loading={loading} empty={d && d.charts.risk.length === 0 ? { title: 'Not enough history yet' } : null}>
+                            {d && <><TimeChart kind="line" label="Risk score over time" data={d.charts.risk} series={RISK_SERIES} yMax={100} stacked={false} /><Legend series={RISK_SERIES} /></>}
+                        </ChartCard>
+                        <ChartCard title="Remediation progress" loading={loading}>
+                            {d && <BarList label="Remediation tasks by state" items={[['todo', 'To do', '--vz-prog-1'], ['doing', 'In progress', '--vz-prog-3'], ['done', 'Done', '--vz-good'], ['cancelled', 'Cancelled', '--vz-neutral']].map(([key, label, token]) => ({ key, label, value: d.charts.tasks[key] ?? 0, token: token as Series['token'], href: '/admin/vms/remediation?view=table' }))} />}
+                        </ChartCard>
+                        <ChartCard className="xl:col-span-3" title="Critical exposure trend" hint="Daily snapshots of open findings that matter most from outside." loading={loading} empty={d && d.charts.exposure.length < 2 ? { title: 'Not enough history yet' } : null}>
+                            {d && <><TimeChart kind="line" label="Exposure trend" data={d.charts.exposure} series={EXPOSURE_SERIES} stacked={false} height={200} /><Legend series={EXPOSURE_SERIES} /></>}
+                        </ChartCard>
+                    </section>
 
-            <div className="bg-card border border-border rounded-xl p-5">
-                <h2 className="font-bold text-sm text-foreground mb-4">Compliance Posture</h2>
-                {frameworks === null ? (
-                    <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 bg-card-muted rounded animate-pulse" />)}</div>
-                ) : (
-                    <div className="space-y-3">
-                        {frameworks.map((f) => (
-                            <div key={f.shortName}>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-xs font-medium text-foreground">{f.shortName}</span>
-                                    <span className="text-xs font-bold text-foreground">{f.assessed > 0 ? `${f.score}%` : 'Not assessed'}</span>
-                                </div>
-                                <div className="bg-card-muted rounded-full h-2"><div className="h-2 rounded-full bg-purple" style={{ width: `${f.score}%` }} /></div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+                    <Card>
+                        <SectionTitle title="Top 5 Critical Assets" hint="Highest open risk, ranked" action={<Link href="/admin/vms/assets" className={btn('ghost')}>All assets</Link>} />
+                        <DataTable caption="Top 5 critical assets" rows={d?.lists.highest_risk_assets.slice(0, 5) ?? null} columns={criticalAssetCols} rowKey={(a) => a.asset_id} initialSort={{ key: 'risk', dir: 'desc' }} empty="No asset has open findings" />
+                    </Card>
 
-            <div className="bg-card border border-border rounded-xl p-5">
-                <h2 className="font-bold text-sm text-foreground mb-2">Top Risks</h2>
-                {caseKpis === null ? (
-                    <p className="text-xs text-foreground-muted">Case data unavailable.</p>
-                ) : caseKpis.critical > 0 ? (
-                    <p className="text-xs text-foreground-muted">{caseKpis.critical} critical-severity case{caseKpis.critical === 1 ? '' : 's'} open — see Cases for detail.</p>
-                ) : (
-                    <p className="text-xs text-foreground-muted">No critical cases open.</p>
-                )}
-                {agents && agents.disconnected > 0 && (
-                    <p className="text-xs text-foreground-muted mt-1">{agents.disconnected} endpoint{agents.disconnected === 1 ? ' is' : 's are'} offline and not currently monitored.</p>
-                )}
-            </div>
+                    <Card>
+                        <SectionTitle title="Priority Remediation" hint="Overdue, ranked by deadline" action={<Link href="/admin/vms/remediation?view=table&overdue=1" className={btn('ghost')}>All remediation</Link>} />
+                        <DataTable caption="Priority remediation" rows={d?.lists.overdue_tasks.slice(0, 5) ?? null} columns={remediationCols} rowKey={(t) => t.id} initialSort={{ key: 'due', dir: 'asc' }} empty="Nothing overdue" />
+                    </Card>
 
-            <button onClick={() => exportPageAsPDF('executive-report', 'executive-security-report', 'Executive Security Report')}
-                className="bg-orange hover:bg-orange-hover text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors">
-                Export as PDF
-            </button>
+                    <Card>
+                        <SectionTitle title="Priority recommendations" />
+                        <ul className="space-y-2 text-xs text-foreground">
+                            {d && d.kpis.critical_open > 0 && <li>• {d.kpis.critical_open} open critical vulnerability{d.kpis.critical_open === 1 ? '' : 'ies'} — prioritise remediation on business-critical assets first.</li>}
+                            {d && d.kpis.overdue_tasks > 0 && <li>• {d.kpis.overdue_tasks} remediation task{d.kpis.overdue_tasks === 1 ? '' : 's'} overdue — review ownership and deadlines in Remediation.</li>}
+                            {totalCollectors > 0 && operationalCollectors < totalCollectors && <li>• {totalCollectors - operationalCollectors} collector{totalCollectors - operationalCollectors === 1 ? '' : 's'} not yet operational — check Collector Management for status.</li>}
+                            {cases.data?.summary && cases.data.summary.critical > 0 && <li>• {cases.data.summary.critical} critical incident{cases.data.summary.critical === 1 ? '' : 's'} open in Security Operations.</li>}
+                            {d && d.kpis.critical_open === 0 && d.kpis.overdue_tasks === 0 && (!cases.data?.summary || cases.data.summary.critical === 0) && <li>No critical items require immediate executive attention.</li>}
+                        </ul>
+                    </Card>
+                </>
+            )}
         </div>
     );
 }

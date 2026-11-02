@@ -4,7 +4,7 @@
 import { randomUUID, randomBytes } from 'node:crypto';
 import { loadState, saveState } from './store';
 import { hashPassword } from './auth/users';
-import type { AiArtifactRecord, AiDiagnosticResult, CollectorInfraCategory, CollectorKind, CollectorRecord, CollectorStatus, FindingRecord, FindingStatus, IngestionEventRecord, InviteRecord, OrgRecord, PostureEventRecord, PostureEventType, SimState, TaskRecord, UserRecord, UserRole } from './types';
+import type { AiArtifactRecord, AiDiagnosticResult, CollectorInfraCategory, CollectorKind, CollectorRecord, CollectorStatus, FindingRecord, FindingStatus, HandoverLogRecord, IngestionEventRecord, InviteRecord, OrgRecord, PostureEventRecord, PostureEventType, SimState, TaskRecord, UserRecord, UserRole } from './types';
 import type { VmsAsset, VmsScan } from '@/lib/vms';
 
 export type PostureLabel = 'secure' | 'monitored' | 'at_risk' | 'critical';
@@ -303,7 +303,7 @@ export function listUsers(): Omit<UserRecord, 'passwordHash'>[] {
     return loadState().users.filter((u) => u.role !== 'portal_user').map(({ passwordHash: _unused, ...rest }) => rest);
 }
 
-export async function createInvite(email: string, role: UserRole, invitedBy: string, orgId: string | null = null): Promise<InviteRecord> {
+export async function createInvite(email: string, role: UserRole, invitedBy: string, orgId: string | null = null, jobFunction = '', scope: Record<string, string> = {}): Promise<InviteRecord> {
     const invite: InviteRecord = {
         // 32 random bytes, base64url — 43 characters, matching set-password/page.tsx's token regex.
         token: randomBytes(32).toString('base64url'),
@@ -314,6 +314,8 @@ export async function createInvite(email: string, role: UserRole, invitedBy: str
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
         acceptedAt: null,
+        jobFunction,
+        scope,
     };
     await saveState((draft) => {
         // One live invite per email at a time — a re-invite replaces the previous token.
@@ -528,4 +530,20 @@ export function getAiDiagnostic(): AiDiagnosticResult {
 
 export async function setAiDiagnostic(result: AiDiagnosticResult): Promise<void> {
     await saveState((draft) => { draft.aiDiagnostic = result; });
+}
+
+// --- Shift handover (src/app/api/secops/handover, src/components/features/ShiftHandover.tsx) ----
+
+export function listHandoverLogs(): HandoverLogRecord[] {
+    return [...loadState().handoverLogs].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+}
+
+export function getLatestHandoverLog(): HandoverLogRecord | null {
+    return listHandoverLogs()[0] ?? null;
+}
+
+export async function createHandoverLog(input: Omit<HandoverLogRecord, 'id' | 'submittedAt'>): Promise<HandoverLogRecord> {
+    const log: HandoverLogRecord = { ...input, id: `handover-${randomUUID()}`, submittedAt: new Date().toISOString() };
+    await saveState((draft) => { draft.handoverLogs.push(log); });
+    return log;
 }
