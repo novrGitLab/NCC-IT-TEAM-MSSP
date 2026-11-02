@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "NCC SOC",
-  description: "NCC SOC — evaluation environment. Telemetry and response actions are simulated; no external assets are connected.",
+  description: "NCC SOC — security operations and vulnerability management platform.",
   // Favicon comes from the src/app/icon.svg file-convention instead — no explicit override here.
 };
 

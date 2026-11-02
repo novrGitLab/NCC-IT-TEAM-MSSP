@@ -31,7 +31,7 @@ function formatLastSeen(iso: string | null): string {
 }
 
 // GET /api/wazuh/agents (routes/wazuh.ts) only ever returns Shape 1 today — this also accepts
-// a raw Wazuh Manager API passthrough shape defensively, in case that ever changes.
+// a raw endpoint manager API passthrough shape defensively, in case that ever changes.
 function normalizeAgents(data: unknown): Agent[] {
     const d = data as { agents?: unknown; data?: { affected_items?: unknown[] } } | null;
     if (Array.isArray(d?.agents)) return d.agents as Agent[];
@@ -94,7 +94,7 @@ export function DigitalAssets() {
             <div className="space-y-4">
                 <div>
                     <h1 className="text-lg font-black text-foreground">Asset Inventory</h1>
-                    <p className="text-xs text-foreground-muted">Assets & Risk · Endpoints registered via the Wazuh agent</p>
+                    <p className="text-xs text-foreground-muted">Assets & Risk · Endpoints registered via the Endpoint agent</p>
                 </div>
 
                 {/* KPIs */}
@@ -128,14 +128,14 @@ export function DigitalAssets() {
                                     : <Monitor size={20} className="text-purple" />}
                             </div>
                             <h3 className="font-semibold text-sm text-foreground mb-1">
-                                {fetchFailed ? 'Wazuh unreachable' : (search ? 'No matching assets' : 'No agents found')}
+                                {fetchFailed ? 'Endpoint monitoring unreachable' : (search ? 'No matching assets' : 'No agents found')}
                             </h3>
                             <p className="text-xs text-foreground-muted max-w-xs mx-auto">
                                 {fetchFailed
                                     ? `The agent inventory could not be read (${fetchFailed}). This is not an empty inventory — try again shortly.`
                                     : search
                                         ? 'No assets match your search.'
-                                        : 'No agents are currently enrolled. Install the Wazuh agent on a device and point it at your organisation\'s configured Wazuh manager to see it appear here automatically.'}
+                                        : 'No agents are currently enrolled. Install the Endpoint agent on a device and point it at your organisation\'s configured endpoint manager to see it appear here automatically.'}
                             </p>
                         </div>
                     ) : (

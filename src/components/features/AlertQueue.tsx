@@ -251,7 +251,7 @@ export function AlertQueue({ mode = 'staff' }: { mode?: 'staff' | 'client' }) {
                 <div>
                     <h1 className="text-lg font-black text-foreground">{client ? 'Security Alerts' : 'Alerts'}</h1>
                     <p className="text-xs text-foreground-muted">
-                        {client ? 'Wazuh alerts and firewall activity for your organisation' : 'SecOps & Response · Stored Wazuh alerts for your organisation'}
+                        {client ? 'security alerts and firewall activity for your organisation' : 'SecOps & Response · Stored security alerts for your organisation'}
                         {checkedAt ? ` · updated ${watTime(checkedAt)}, refreshes every 30 s` : ''}
                     </p>
                 </div>
@@ -382,15 +382,15 @@ export function AlertQueue({ mode = 'staff' }: { mode?: 'staff' | 'client' }) {
 
                             <div className="grid grid-cols-2 gap-3 text-xs">
                                 {([
-                                    ['Agent', selected.agent_id === '000' ? 'Wazuh manager (syslog)' : `${selected.agent_name ?? '—'}${selected.agent_id ? ` (${selected.agent_id})` : ''}`],
+                                    ['Agent', selected.agent_id === '000' ? 'endpoint manager (syslog)' : `${selected.agent_name ?? '—'}${selected.agent_id ? ` (${selected.agent_id})` : ''}`],
                                     ...(client ? [] : [['Agent IP', selected.agent_ip ?? '—']]),
                                     ['Event time', watTime(selected.event_time)],
                                     ['Received', watTime(selected.received_at)],
                                     ['MITRE', selected.mitre_ids?.length ? selected.mitre_ids.join(', ') : '—'],
-                                    ...(client ? [] : [['Wazuh groups', selected.wazuh_groups?.length ? selected.wazuh_groups.join(', ') : '—']]),
+                                    ...(client ? [] : [['Endpoint groups', selected.wazuh_groups?.length ? selected.wazuh_groups.join(', ') : '—']]),
                                     ['Location', selected.location ?? '—'],
                                     ...(client ? [] : [
-                                        ['Wazuh alert id', selected.wazuh_alert_id],
+                                        ['security alert id', selected.wazuh_alert_id],
                                         ['Assigned to', selected.assigned_to ?? 'Nobody'],
                                         ['Acknowledged', selected.acknowledged_at ? `${watTime(selected.acknowledged_at)} by ${selected.acknowledged_by ?? '—'}` : 'No'],
                                     ]),

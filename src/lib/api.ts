@@ -26,7 +26,7 @@ const PORTED_EXACT = new Set([
     '/api/ai/generate', '/api/ai/artifacts', '/api/ai/diagnostic',
     '/api/invites',
     '/api/organisations', '/api/admin/collectors', '/api/collectors', '/api/posture/summary',
-    '/api/secops/handover', '/api/secops/team',
+    '/api/secops/handover', '/api/secops/team', '/api/admin/team/presence',
 ]);
 const PORTED_PATTERNS = [
     /^\/api\/vms\/assets\/[^/]+$/, /^\/api\/vms\/assets\/[^/]+\/graph$/, /^\/api\/vms\/assets\/[^/]+\/onboarding-scan$/,

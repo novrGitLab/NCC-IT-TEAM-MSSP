@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 // Case workbench — reads and writes /api/cases (Supabase). Cases come from two places: the SOAR
-// engine on the Wazuh manager (one per level 7+ alert) and analyst actions elsewhere in the
+// engine on the endpoint manager (one per level 7+ alert) and analyst actions elsewhere in the
 // platform. The queue excludes tier-1 cases the engine auto-closed; those never needed an
 // analyst and are reported on SOAR Automation instead.
 

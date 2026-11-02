@@ -2,7 +2,7 @@
 
 // Client portal overview (phase P24): the organisation's own monitoring, from
 // GET /api/client/secops/summary and /alerts (org-scoped stored alerts and the organisation's
-// Wazuh agents). Refreshes every 60 s while the tab is visible. Every figure is real or shown as
+// Endpoint agents). Refreshes every 60 s while the tab is visible. Every figure is real or shown as
 // unavailable ("—" with the reason); nothing is a placeholder or a derived "threat level".
 
 import { useCallback, useEffect, useState } from 'react';
@@ -142,7 +142,7 @@ export const PortalDashboard = () => {
                 <div className="bg-card border border-blue/30 rounded-xl p-6">
                     <h3 className="text-sm font-black text-foreground mb-1">No endpoints are reporting yet</h3>
                     <p className="text-xs text-foreground-muted">
-                        No Wazuh agents are enrolled for your organisation. Your SOC team provides the agent installer and enrolment details for your environment.
+                        No Endpoint agents are enrolled for your organisation. Your SOC team provides the agent installer and enrolment details for your environment.
                     </p>
                 </div>
             )}

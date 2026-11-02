@@ -41,16 +41,20 @@ export const DEMO_CASES = [
     },
 ];
 
-export const DEMO_CASES_SUMMARY = {
-    total: DEMO_CASES.length,
-    open: DEMO_CASES.filter((c) => c.status === 'open').length,
-    investigating: DEMO_CASES.filter((c) => c.status === 'investigating').length,
-    closed: DEMO_CASES.filter((c) => c.status === 'closed').length,
-    // Dashboard KPI card reads `summary.active`/`summary.critical` (GeneralDashboard.tsx) —
-    // computed here, never a separate hardcoded number, so it can't drift from DEMO_CASES.
-    active: DEMO_CASES.filter((c) => c.status === 'open' || c.status === 'investigating').length,
-    critical: DEMO_CASES.filter((c) => c.status !== 'closed' && c.severity === 'critical').length,
-};
+// Computed on every call from the live case list: case status changes (PATCH, escalate) must be
+// reflected in the summary the same request returns, never a snapshot taken at module load.
+export function casesSummary() {
+    const open = DEMO_CASES.filter((c) => c.status === 'open').length;
+    const investigating = DEMO_CASES.filter((c) => c.status === 'investigating').length;
+    return {
+        total: DEMO_CASES.length,
+        open,
+        investigating,
+        closed: DEMO_CASES.filter((c) => c.status === 'closed').length,
+        active: open + investigating,
+        critical: DEMO_CASES.filter((c) => c.status !== 'closed' && c.severity === 'critical').length,
+    };
+}
 
 export const DEMO_PLAYBOOKS = [
     { id: 'pb-1', name: 'Credential stuffing response', tier: 1, steps: 3 },

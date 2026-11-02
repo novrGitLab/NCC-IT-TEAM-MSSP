@@ -1,12 +1,12 @@
 'use client';
 
-// Wazuh Groups — super_admin view of which organisation owns each Wazuh agent group, and of the
+// Wazuh Groups — super_admin view of which organisation owns each Endpoint agent group, and of the
 // alerts held in quarantine because their group isn't mapped (phase P1). Mapping a group here
 // replays its quarantined alerts into that organisation. Reads and writes
 // /api/admin/wazuh-group-map; the backend enforces super_admin. Quarantined alert content is
 // never shown — only per-group counts.
 //
-// Syslog sources (phase P24): syslog the Wazuh manager receives itself — OPNsense over WireGuard
+// Syslog sources (phase P24): syslog the endpoint manager receives itself — OPNsense over WireGuard
 // to UDP 514 — arrives as agent 000 with no group. Its owner is set by sender address here
 // (/api/admin/wazuh-group-map/sources); mapping a sender replays its quarantined alerts. Only map
 // addresses that reach the manager over an authenticated path (WireGuard), never the open internet.
@@ -95,8 +95,8 @@ export function WazuhGroups() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-black text-foreground">Wazuh Groups</h1>
-                    <p className="text-xs text-foreground-muted">Which organisation owns each Wazuh agent group and syslog sender. Alerts nothing maps are held in quarantine for 14 days.</p>
+                    <h1 className="text-lg font-black text-foreground">Endpoint Groups</h1>
+                    <p className="text-xs text-foreground-muted">Which organisation owns each Endpoint agent group and syslog sender. Alerts nothing maps are held in quarantine for 14 days.</p>
                 </div>
                 <button onClick={reload} className="flex items-center gap-1.5 text-[11px] font-bold text-foreground-muted hover:text-foreground border border-border rounded-lg px-3 py-1.5">
                     <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -155,7 +155,7 @@ export function WazuhGroups() {
                                     <td>{fmt(g.oldest)}</td>
                                     <td>{fmt(g.newest)}</td>
                                     <td>
-                                        {g.wazuh_group === '(no group)' ? <span className="text-foreground-muted">Assign the agent to a group in Wazuh</span> : (
+                                        {g.wazuh_group === '(no group)' ? <span className="text-foreground-muted">Assign the agent to a group in the endpoint console</span> : (
                                             <div className="flex gap-2">
                                                 <select aria-label={`Organisation for ${g.wazuh_group}`} value={choice[g.wazuh_group] ?? ''} onChange={(e) => setChoice((c) => ({ ...c, [g.wazuh_group]: e.target.value }))} className="bg-card border border-border rounded px-2 py-1">
                                                     <option value="">Choose…</option>
@@ -177,7 +177,7 @@ export function WazuhGroups() {
             <div className="bg-card border border-border rounded-xl p-4 space-y-3">
                 <div>
                     <h2 className="text-sm font-black text-foreground flex items-center gap-2"><Network className="w-4 h-4" /> Syslog sources</h2>
-                    <p className="text-[11px] text-foreground-muted">Firewalls and other devices that send syslog straight to the Wazuh manager (e.g. OPNsense over WireGuard to UDP 514). Their alerts are matched by the sender address Wazuh records as <span className="font-mono">location</span>. Map only addresses that reach the manager over an authenticated path.</p>
+                    <p className="text-[11px] text-foreground-muted">Firewalls and other devices that send syslog straight to the endpoint manager (e.g. OPNsense over WireGuard to UDP 514). Their alerts are matched by the sender address Wazuh records as <span className="font-mono">location</span>. Map only addresses that reach the manager over an authenticated path.</p>
                 </div>
                 {srcError && <p className="text-xs text-red-500 font-semibold">{srcError}</p>}
                 {sources === null && !srcError && <div className="h-10 bg-card-muted rounded animate-pulse" />}

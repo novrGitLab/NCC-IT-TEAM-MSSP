@@ -209,7 +209,7 @@ export function ThreatActors() {
 
             <div className="flex gap-2">
                 {([
-                    { key: 'nigerian' as const, label: `Nigeria & West Africa (${nigerian.length})` },
+                    { key: 'nigerian' as const, label: `Regional (${nigerian.length})` },
                     { key: 'global' as const, label: `Global — relevant sectors (${global.length})` },
                 ]).map((t) => (
                     <button

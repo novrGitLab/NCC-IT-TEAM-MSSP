@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { UserPlus, Search } from 'lucide-react';
 import { useTeamPresence, PresenceStats, PresenceCards, relativeTime } from '@/components/features/TeamPresence';
 import { apiUrl, apiFetch } from '@/lib/api';
-import { JOB_FUNCTIONS, JOB_FUNCTION_IDS, isJobFunction, type JobFunction } from '@/lib/team/invite-functions';
+import { JOB_FUNCTIONS, JOB_FUNCTION_IDS, isJobFunction, jobFunctionLabel, type JobFunction } from '@/lib/team/invite-functions';
 
 // Team — live status on top (heartbeat presence), then the roster. The roster used to be a
 // hardcoded mock list; it is now the real platform_users table, same layout.
@@ -174,6 +174,9 @@ export default function TeamPage() {
                                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${ROLE_BADGE[user.role] ?? ROLE_BADGE.viewer}`}>
                                         {ROLE_LABEL[user.role] ?? user.role}
                                     </span>
+                                    {jobFunctionLabel(user.job_function) && (
+                                        <div className="text-[11px] text-foreground-muted mt-1">{jobFunctionLabel(user.job_function)}</div>
+                                    )}
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${user.account_status === 'active' ? 'bg-green/10 text-green' : 'bg-amber/10 text-amber'}`}>
@@ -190,7 +193,7 @@ export default function TeamPage() {
                 </table>
             </div>
             <p className="text-[10px] text-foreground-muted">
-                Roster from the simulation state. Role changes and removal are not available yet. Invitations are recorded locally; no email is sent unless Brevo is configured.
+                Roster from the platform records. Role changes and removal are not available yet. Invitations are recorded locally. Email delivery is off in this environment.
             </p>
 
             {/* Invite Modal */}
@@ -223,11 +226,11 @@ export default function TeamPage() {
                                         </dl>
                                     )}
                                     {inviteResult.sent ? (
-                                        <p className="text-xs text-foreground-muted">An invitation email was sent.</p>
+                                        <p className="text-xs text-foreground-muted">Invitation email delivered.</p>
                                     ) : (
                                         <>
                                             <p className="text-xs text-foreground-muted">
-                                                No email was sent{inviteResult.reason ? ` (${inviteResult.reason})` : ''}. Share this link with {inviteResult.invite?.email ?? inviteEmail} directly:
+                                                Recorded locally. No email was sent. Share this link with {inviteResult.invite?.email ?? inviteEmail} directly:
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <input readOnly value={inviteResult.invite_url ?? ''} className="flex-1 border border-border rounded-lg px-3 py-2 text-xs font-mono bg-card-muted" />

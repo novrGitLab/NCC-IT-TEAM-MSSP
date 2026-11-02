@@ -13,7 +13,7 @@ interface Service {
 
 const SERVICES: Service[] = [
     { name: 'API Gateway', status: 'operational', uptime: '99.98%' },
-    { name: 'Wazuh Manager', status: 'operational', uptime: '99.95%' },
+    { name: 'endpoint manager', status: 'operational', uptime: '99.95%' },
     { name: 'OpenSearch / Indexer', status: 'operational', uptime: '99.92%' },
     { name: 'PostgreSQL Database', status: 'operational', uptime: '100%' },
     { name: 'Authentication', status: 'operational', uptime: '99.99%' },
@@ -102,7 +102,7 @@ export default function StatusPage() {
                     </div>
                 </div>
 
-                <p className="text-center text-xs text-grey-500">NCC SOC Status Page (demonstration)</p>
+                <p className="text-center text-xs text-grey-500">NCC SOC Status Page</p>
             </main>
         </div>
     );

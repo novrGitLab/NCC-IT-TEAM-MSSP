@@ -7,7 +7,6 @@ import { Eye, EyeOff } from 'lucide-react';
 import type { CredentialResponse } from '@react-oauth/google';
 import { setPortalSession } from '@/lib/portal-auth';
 import { apiUrl, apiFetch } from '@/lib/api';
-import { DEMO_PORTAL_EMAIL as DEMO_ADMIN_EMAIL, DEMO_PORTAL_PASSWORD as DEMO_ADMIN_PASSWORD } from '@/lib/authDisplay';
 import { AuthField } from '@/components/auth/AuthField';
 import { NigeriaLoginMap } from '@/components/auth/NigeriaLoginMap';
 import { Logo } from '@/components/shared/Logo';
@@ -185,12 +184,6 @@ export default function ClientLoginPage() {
                         </button>
                     </form>
 
-                    {/* Evaluation credentials — this environment has no production backend or real
-                        accounts; everything after sign-in is simulated. */}
-                    <p className="text-foreground-muted text-xs text-center mt-4">
-                        Evaluation credentials: <span className="font-mono">{DEMO_ADMIN_EMAIL}</span> / <span className="font-mono">{DEMO_ADMIN_PASSWORD}</span>
-                    </p>
-
                     {/* See src/app/login/page.tsx — Google Sign-In is intentionally disabled in
                         this demo build (/api/auth/google returns 501, not wired to a real client). */}
                     {googleOAuthEnabled && portalConfigured !== false && (
@@ -221,7 +214,7 @@ export default function ClientLoginPage() {
                         Analyst? Access admin portal at{' '}
                         <Link href="/login" className="text-purple hover:underline">/login</Link>
                     </p>
-                    <p className="text-grey-300 text-xs mt-2">NCC SOC — demonstration edition</p>
+                    <p className="text-grey-300 text-xs mt-2">NCC SOC</p>
                 </div>
             </div>
 

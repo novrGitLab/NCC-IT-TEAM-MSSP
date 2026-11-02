@@ -26,13 +26,19 @@ export function patchAlert(id: string, changes: { status?: StoredAlert['status']
     return a;
 }
 
-export const DEMO_ALERT_STATS = {
-    range: '24h',
-    since: minsAgo(24 * 60),
-    total: DEMO_ALERTS.length,
-    by_severity: { critical: 2, high: 2, medium: 1, low: 2, info: 0 },
-    by_status: { new: 2, triaged: 2, escalated: 1, closed: 1, false_positive: 1 },
-    last_received_at: DEMO_ALERTS[0].received_at,
-    last_event_time: DEMO_ALERTS[0].event_time,
-    stale_after_minutes: 60,
-};
+// Computed on every call from the live alert list, so triage and escalation changes show up in the
+// same response that reports them.
+export function alertStats() {
+    const count = <K extends string>(keys: readonly K[], pick: (a: StoredAlert) => string) =>
+        Object.fromEntries(keys.map((k) => [k, DEMO_ALERTS.filter((a) => pick(a) === k).length])) as Record<K, number>;
+    return {
+        range: '24h',
+        since: minsAgo(24 * 60),
+        total: DEMO_ALERTS.length,
+        by_severity: count(['critical', 'high', 'medium', 'low', 'info'] as const, (a) => a.severity),
+        by_status: count(['new', 'triaged', 'escalated', 'closed', 'false_positive'] as const, (a) => a.status),
+        last_received_at: DEMO_ALERTS[0].received_at,
+        last_event_time: DEMO_ALERTS[0].event_time,
+        stale_after_minutes: 60,
+    };
+}

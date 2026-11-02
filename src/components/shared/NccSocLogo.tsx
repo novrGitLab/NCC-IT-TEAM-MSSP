@@ -17,9 +17,6 @@ export function NccSocLogo({ size = 'md', variant = 'default' }: NccSocLogoProps
             >
                 NCC SOC
             </span>
-            <span className={cn('text-[10px] font-medium -mt-0.5', variant === 'white' ? 'text-white/60' : 'text-purple')}>
-                evaluation environment
-            </span>
         </div>
     );
 }

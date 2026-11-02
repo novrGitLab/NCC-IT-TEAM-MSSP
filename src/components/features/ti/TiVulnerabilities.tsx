@@ -3,7 +3,7 @@
 // Threat Intelligence — Vulnerabilities & Advisories (phase P25). The CISA Known Exploited
 // Vulnerabilities catalogue with NVD scoring and FIRST EPSS shown separately (never blended into
 // one number), CISA's due date and ransomware status as CISA states them, and whether this
-// organisation has open findings for each CVE. Nigerian advisories are listed beside them.
+// organisation has open findings for each CVE. regional advisories are listed beside them.
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -45,7 +45,7 @@ export function TiVulnerabilities() {
     return (
         <div className="space-y-5">
             <PageHeader title="Vulnerabilities & Advisories" icon={ShieldAlert}
-                description="Vulnerabilities known to be exploited (CISA KEV) with NVD and EPSS context, matched against this organisation's open findings, and Nigerian security advisories."
+                description="Vulnerabilities known to be exploited (CISA KEV) with NVD and EPSS context, matched against this organisation's open findings, and security advisories from regional CERTs."
                 actions={<Segmented label="Listed within" value={days} onChange={(v) => { setDays(v); setPage(1); }} options={PERIODS} />} />
 
             <Card>
@@ -63,7 +63,7 @@ export function TiVulnerabilities() {
             </Card>
 
             <Card>
-                <SectionTitle title="Nigerian advisories" hint="As published by the source; not confirmed incidents" />
+                <SectionTitle title="regional advisories" hint="As published by the source; not confirmed incidents" />
                 {advisories.load.state === 'error' ? <ErrorState error={advisories.load.error} status={advisories.load.status} onRetry={advisories.reload} /> : (advisories.data?.advisories ?? []).length ? (
                     <ul className="divide-y divide-border">
                         {advisories.data!.advisories!.slice(0, 20).map((a) => (
@@ -76,7 +76,7 @@ export function TiVulnerabilities() {
                             </li>
                         ))}
                     </ul>
-                ) : <EmptyState compact title="No advisories collected" body="No Nigerian advisory has been collected yet. The collector reads ngCERT and NITDA where they are reachable." />}
+                ) : <EmptyState compact title="No advisories collected" body="No regional advisory has been collected yet. The collector reads ngCERT and NITDA where they are reachable." />}
             </Card>
 
             <Drawer open={!!open} onClose={() => setOpen(null)} title={open?.cve ?? ''} subtitle={open ? [open.kev.vendor, open.kev.product].filter(Boolean).join(' ') : ''}>

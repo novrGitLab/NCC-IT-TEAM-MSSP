@@ -9,7 +9,7 @@ import { apiUrl, apiFetch } from '@/lib/api';
 //
 // Sources, and what each can actually answer:
 //   GET /api/cases              → case queue counts (open/critical/investigating/resolved today).
-//   GET /api/wazuh/trend?range= → alert volume per bucket, from the Wazuh indexer.
+//   GET /api/wazuh/trend?range= → alert volume per bucket, from the security telemetry index.
 //   GET /api/wazuh/agents       → active vs total agents.
 //   GET /api/wazuh/mitre-stats  → MITRE tactic counts over 24h.
 //   GET /api/platform/health    → how many live service checks are passing.
@@ -143,7 +143,7 @@ export function PlatformAnalytics() {
                         <div className="h-full bg-card-muted rounded animate-pulse" />
                     ) : trend.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-xs text-foreground-muted text-center px-6">
-                            No alert data returned for this range — the Wazuh indexer is unreachable or has no alerts in the window.
+                            No alert data returned for this range — the security telemetry index is unreachable or has no alerts in the window.
                         </div>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
@@ -192,7 +192,7 @@ export function PlatformAnalytics() {
                     <Stat
                         label="Agents Active"
                         value={agents ? `${agents.active}/${agents.total}` : loading ? '…' : '—'}
-                        sub={agents ? `${agents.total - agents.active} not reporting` : 'Wazuh unreachable'}
+                        sub={agents ? `${agents.total - agents.active} not reporting` : 'Endpoint monitoring unreachable'}
                         tone={agents && agents.active < agents.total ? 'text-amber' : 'text-foreground'}
                     />
                     <Stat

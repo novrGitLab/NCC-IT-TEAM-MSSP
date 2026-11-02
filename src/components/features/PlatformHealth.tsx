@@ -5,7 +5,7 @@ import { CheckCircle2, AlertTriangle, Send } from 'lucide-react';
 import { apiUrl, apiFetch } from '@/lib/api';
 
 // Everything on this page is a real check. GET /api/platform/health (routes/platform.ts) runs
-// four live probes per request — Wazuh Manager, Database (Supabase, which also holds cases),
+// four live probes per request — endpoint manager, Database (Supabase, which also holds cases),
 // NVIDIA AI and MISP — and returns the integration key/config state alongside them.
 //
 // This page used to pad that out with a hardcoded service list carrying invented uptime

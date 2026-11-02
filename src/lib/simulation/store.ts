@@ -14,7 +14,7 @@
 // one thing every module instance in the same process actually shares.
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { buildDefaultState } from './scenarios';
+import { buildDefaultState, ensureRepresentativeStaff } from './scenarios';
 import type { SimState } from './types';
 import { SIM_STATE_VERSION } from './types';
 
@@ -55,6 +55,7 @@ function readFromDisk(): SimState | null {
         const raw = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
         assertValidState(raw);
         if (raw.version !== SIM_STATE_VERSION) return null; // schema changed — reseed rather than guess a migration
+        ensureRepresentativeStaff(raw); // additive only: existing users and invitations are kept
         return raw;
     } catch {
         return null; // corrupt or unreadable — fall back to a fresh seed rather than crashing the server

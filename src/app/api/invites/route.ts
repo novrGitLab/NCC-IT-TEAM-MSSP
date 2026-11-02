@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession, authErrorResponse } from '@/lib/simulation/auth/guard';
 import { createInvite, listUsers } from '@/lib/simulation/engine';
-import { isConfigured, sendInviteEmail } from '@/lib/simulation/email/invites';
+import { isDeliveryEnabled, LOCAL_ONLY_REASON, sendInviteEmail } from '@/lib/simulation/email/invites';
 import { isJobFunction, JOB_FUNCTIONS, sanitizeScope, type JobFunction } from '@/lib/team/invite-functions';
 
 export async function GET() {
@@ -30,12 +30,21 @@ export async function POST(req: NextRequest) {
         // set-password/page.tsx reads the token from the URL hash fragment (never sent to a
         // server by the browser) rather than a query string.
         const inviteUrl = `${req.nextUrl.origin}/set-password#token=${invite.token}`;
+        const summary = { email, jobFunction: fn, role: def.role, scope: scoped.scope };
 
-        if (!isConfigured()) {
-            return NextResponse.json({ sent: false, reason: 'Brevo is not configured in this environment.', invite_url: inviteUrl, invite: { email, jobFunction: fn, role: def.role, scope: scoped.scope } });
+        // Delivery is opt-in for production only (src/lib/simulation/email/invites.ts). When it is
+        // off, Brevo is never contacted and the invitation is only the local record and its link.
+        if (!isDeliveryEnabled()) {
+            return NextResponse.json({ delivery: 'recorded', sent: false, reason: LOCAL_ONLY_REASON, invite_url: inviteUrl, invite: summary });
         }
         const result = await sendInviteEmail(email, inviteUrl, def.role, admin.name);
-        return NextResponse.json({ sent: result.sent, reason: result.reason, invite_url: result.sent ? undefined : inviteUrl, invite: { email, jobFunction: fn, role: def.role, scope: scoped.scope } });
+        return NextResponse.json({
+            delivery: result.sent ? 'delivered' : 'recorded',
+            sent: result.sent,
+            reason: result.reason,
+            invite_url: result.sent ? undefined : inviteUrl,
+            invite: summary,
+        });
     } catch (err) {
         return authErrorResponse(err);
     }

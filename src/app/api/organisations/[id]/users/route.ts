@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession, authErrorResponse } from '@/lib/simulation/auth/guard';
 import { createInvite, getOrganisation } from '@/lib/simulation/engine';
-import { isConfigured, sendInviteEmail } from '@/lib/simulation/email/invites';
+import { isDeliveryEnabled, LOCAL_ONLY_REASON, sendInviteEmail } from '@/lib/simulation/email/invites';
 import type { UserRole } from '@/lib/simulation/types';
 
 const VALID_ROLES: UserRole[] = ['super_admin', 'soc_manager', 'analyst', 'executive', 'portal_user'];
@@ -19,11 +19,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (!email) return NextResponse.json({ error: 'email is required' }, { status: 400 });
 
         const invite = await createInvite(email, role, admin.name, role === 'portal_user' ? org.id : null);
-        if (isConfigured()) {
-            const inviteUrl = `${req.nextUrl.origin}/set-password#token=${invite.token}`;
-            await sendInviteEmail(email, inviteUrl, role, admin.name).catch(() => null);
+        if (!isDeliveryEnabled()) {
+            return NextResponse.json({ ok: true, delivery: 'recorded', message: LOCAL_ONLY_REASON });
         }
-        return NextResponse.json({ ok: true, message: 'Team member invited and persisted to this organisation.' });
+        const inviteUrl = `${req.nextUrl.origin}/set-password#token=${invite.token}`;
+        const result = await sendInviteEmail(email, inviteUrl, role, admin.name).catch(() => ({ sent: false, reason: 'Delivery failed.' }));
+        return NextResponse.json({
+            ok: true,
+            delivery: result.sent ? 'delivered' : 'recorded',
+            message: result.sent ? 'Invitation email delivered.' : `Invitation recorded; no email was delivered${result.reason ? ` (${result.reason})` : ''}.`,
+        });
     } catch (err) {
         return authErrorResponse(err);
     }

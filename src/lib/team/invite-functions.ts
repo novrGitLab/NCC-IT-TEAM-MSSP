@@ -74,6 +74,10 @@ export function isJobFunction(value: unknown): value is JobFunction {
     return typeof value === 'string' && (JOB_FUNCTION_IDS as string[]).includes(value);
 }
 
+export function jobFunctionLabel(value: string | null | undefined): string | null {
+    return isJobFunction(value) ? JOB_FUNCTIONS[value].label : null;
+}
+
 /** Validates the scoped answers for one job function. Returns only the known keys. */
 export function sanitizeScope(fn: JobFunction, input: unknown): { ok: true; scope: Record<string, string> } | { ok: false; error: string } {
     const answers = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;

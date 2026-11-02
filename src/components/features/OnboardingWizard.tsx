@@ -19,10 +19,10 @@ interface DemoDeploymentStep { step: number; title: string; description: string 
 const INFRA_TYPES = [
     { id: 'server', label: 'Servers', icon: Server, assetType: 'server', infraCategory: 'servers', collectorKind: 'agentless', sampleTelemetry: ['4,820 auth/syslog events forwarded', 'OS patch inventory refreshed', '2 SSH brute-force attempts flagged'] },
     { id: 'middleware', label: 'Oracle WebLogic / Middleware', icon: Database, assetType: 'middleware', infraCategory: 'middleware', collectorKind: 'log_forwarding', sampleTelemetry: ['1,140 application log lines shipped', 'WebLogic admin console access logged', '1 slow-query warning captured'] },
-    { id: 'cloud', label: 'Cloud Infrastructure', icon: Cloud, assetType: 'cloud', infraCategory: 'cloud', collectorKind: 'api_connector', sampleTelemetry: ['CloudTrail API-call events queued', 'IAM policy change detected (simulated)', 'S3 bucket ACL drift check pending'] },
+    { id: 'cloud', label: 'Cloud Infrastructure', icon: Cloud, assetType: 'cloud', infraCategory: 'cloud', collectorKind: 'api_connector', sampleTelemetry: ['CloudTrail API-call events queued', 'IAM policy change detected (illustrative)', 'S3 bucket ACL drift check pending'] },
     { id: 'endpoint', label: 'Endpoints', icon: Laptop, assetType: 'workstation', infraCategory: 'endpoints', collectorKind: 'endpoint', sampleTelemetry: ['2,310 endpoint telemetry events forwarded', 'EDR heartbeat received', '1 removable-media event logged'] },
     { id: 'workstation', label: 'Developer Workstations', icon: Code2, assetType: 'workstation', infraCategory: 'dev_workstations', collectorKind: 'endpoint', sampleTelemetry: ['Dev tool inventory collected', 'Outbound package-registry access logged', 'Local firewall status: enabled'] },
-    { id: 'network', label: 'Network Devices', icon: Network, assetType: 'network', infraCategory: 'network', collectorKind: 'network_telemetry', sampleTelemetry: ['Syslog stream connected (simulated)', 'Interface flap on uplink 2 (example)', 'Routing table snapshot captured'] },
+    { id: 'network', label: 'Network Devices', icon: Network, assetType: 'network', infraCategory: 'network', collectorKind: 'network_telemetry', sampleTelemetry: ['Syslog stream connected (illustrative)', 'Interface flap on uplink 2 (example)', 'Routing table snapshot captured'] },
     { id: 'firewall', label: 'Firewalls', icon: Flame, assetType: 'network', infraCategory: 'firewall', collectorKind: 'network_telemetry', sampleTelemetry: ['Allow/deny rule hits forwarded', '3 blocked inbound probes (example)', 'Ruleset version check completed'] },
 ] as const;
 
@@ -65,7 +65,7 @@ function CollectorWalkthrough({ orgId }: { orgId: string | null }) {
             <div className="flex items-center justify-between gap-2">
                 <div className="font-bold text-sm text-foreground">Collector Deployment Walkthrough</div>
                 <span className="text-[10px] font-bold uppercase tracking-wide text-amber bg-amber/10 border border-amber/30 rounded-full px-2.5 py-1">
-                    Simulated workflow — no infrastructure connected
+                    Illustrative workflow — no infrastructure connected
                 </span>
             </div>
 
@@ -96,7 +96,7 @@ function CollectorWalkthrough({ orgId }: { orgId: string | null }) {
                     <div className="rounded-lg border border-purple/30 bg-purple/5 p-3 flex items-center gap-3">
                         <Radio size={18} className="text-purple" />
                         <div>
-                            <div className="text-sm font-bold text-foreground">{collector?.integration ?? `${infra.label} collector (simulated)`}</div>
+                            <div className="text-sm font-bold text-foreground">{collector?.integration ?? `${infra.label} collector (illustrative)`}</div>
                             <div className="text-[11px] text-foreground-muted">Matched automatically to &quot;{infra.label}&quot;</div>
                         </div>
                     </div>
@@ -106,7 +106,7 @@ function CollectorWalkthrough({ orgId }: { orgId: string | null }) {
             {walkStep === 3 && infra && (
                 <div>
                     <p className="text-xs text-foreground-muted mb-2">{steps?.find((s) => s.step === 3)?.description}</p>
-                    <div className="rounded-lg border border-border p-3 text-[11px] font-mono text-foreground-muted whitespace-pre-wrap">Requires: network reachability to the collector host, an install account with local admin/root, and an approved maintenance window. (Illustrative prerequisites — nothing is checked or enforced in this demo.)</div>
+                    <div className="rounded-lg border border-border p-3 text-[11px] font-mono text-foreground-muted whitespace-pre-wrap">Requires: network reachability to the collector host, an install account with local admin/root, and an approved maintenance window. (Illustrative prerequisites — nothing is checked or enforced in this build.)</div>
                 </div>
             )}
 
@@ -121,7 +121,7 @@ function CollectorWalkthrough({ orgId }: { orgId: string | null }) {
                 <div>
                     <p className="text-xs text-foreground-muted mb-2">{steps?.find((s) => s.step === 5)?.description}</p>
                     <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${statusStyle[collector?.status ?? 'connecting']}`}>
-                        <span className="w-2 h-2 rounded-full bg-current" /> {collector ? `${collector.status} (simulated)` : 'connecting (simulated)'}
+                        <span className="w-2 h-2 rounded-full bg-current" /> {collector ? `${collector.status} (illustrative)` : 'connecting (illustrative)'}
                     </div>
                 </div>
             )}
@@ -195,7 +195,7 @@ function CollectorWalkthrough({ orgId }: { orgId: string | null }) {
 
 // 5-step new-client onboarding wizard — POST /api/organisations creates the org (Step 1's
 // fields), then reuses the EXISTING org_setup endpoint (POST /api/organisations/:id/setup,
-// shared with the since-removed OrgSetupWizard.tsx) for compliance frameworks + contacts + Wazuh group,
+// shared with the since-removed OrgSetupWizard.tsx) for compliance frameworks + contacts + endpoint group,
 // and POST /api/organisations/:id/users for each Step 4 team member. Nothing here duplicates
 // those two already-working endpoints.
 
@@ -215,7 +215,7 @@ const PLANS = ['starter', 'professional', 'enterprise'] as const;
 
 interface Framework { id: string; name: string; desc: string; required?: boolean; sector?: string }
 const FRAMEWORKS: Framework[] = [
-    { id: 'ndpa', name: 'NDPA', desc: 'Nigeria Data Protection Act', required: true },
+    { id: 'ndpa', name: 'NDPA', desc: 'Data protection framework', required: true },
     { id: 'cbn', name: 'CBN', desc: 'CBN Cybersecurity Framework', sector: 'banking' },
     { id: 'ncc', name: 'NCC', desc: 'NCC Consumer Protection', sector: 'telecom' },
     { id: 'iso27001', name: 'ISO 27001', desc: 'Information Security Mgmt' },
@@ -246,7 +246,7 @@ export function OnboardingWizard() {
     const [domain, setDomain] = useState('');
     const [industry, setIndustry] = useState(INDUSTRIES[0]);
     const [plan, setPlan] = useState<(typeof PLANS)[number]>('starter');
-    const [country, setCountry] = useState('Nigeria');
+    const [country, setCountry] = useState('');
     const [address, setAddress] = useState('');
     const [businessUnits, setBusinessUnits] = useState('');
 
@@ -299,7 +299,7 @@ export function OnboardingWizard() {
                 if (org && !org.onboardingComplete) {
                     setDraftOrgId(org.id);
                     setName(org.name ?? ''); setDomain(org.domain ?? ''); setIndustry(org.industry || INDUSTRIES[0]); setPlan(org.plan ?? 'starter');
-                    setCountry(org.country ?? 'Nigeria'); setAddress(org.address ?? '');
+                    setCountry(org.country ?? ''); setAddress(org.address ?? '');
                     setContactName(org.contactName ?? ''); setContactEmail(org.contactEmail ?? ''); setContactPhone(org.contactPhone ?? '');
                     setCisoName(org.cisoName ?? ''); setCisoEmail(org.cisoEmail ?? '');
                     setBusinessUnits((org.businessUnits ?? []).join(', '));
@@ -367,7 +367,7 @@ export function OnboardingWizard() {
         setStep(1);
         setDraftOrgId(null);
         if (typeof window !== 'undefined') localStorage.removeItem(DRAFT_KEY);
-        setName(''); setDomain(''); setIndustry(INDUSTRIES[0]); setPlan('starter'); setCountry('Nigeria'); setAddress(''); setBusinessUnits('');
+        setName(''); setDomain(''); setIndustry(INDUSTRIES[0]); setPlan('starter'); setCountry(''); setAddress(''); setBusinessUnits('');
         setContactName(''); setContactEmail(''); setContactPhone(''); setCisoName(''); setCisoEmail('');
         setSelectedFrameworks(new Set(['ndpa'])); setScores({}); setAssessLater(new Set());
         setTeam([{ email: '', role: 'soc_manager', name: '' }]);
@@ -460,7 +460,7 @@ export function OnboardingWizard() {
                 </div>
                 <h2 className="text-2xl font-black text-foreground mb-3">{done.orgName} is now onboarded!</h2>
                 <p className="text-sm text-foreground-muted mb-8">
-                    Organisation created.{done.wazuhGroup ? <> Wazuh agents can now be enrolled using the group name: <strong className="text-foreground font-mono">{done.wazuhGroup}</strong>.</> : ' Team members were added to platform_users.'}
+                    Organisation created.{done.wazuhGroup ? <> Endpoint agents can now be enrolled using the group name: <strong className="text-foreground font-mono">{done.wazuhGroup}</strong>.</> : ' Team members were added to platform_users.'}
                 </p>
                 <div className="flex gap-3 justify-center">
                     <button onClick={() => router.push('/admin/dashboard')} className="text-xs font-bold text-white bg-purple hover:bg-purple-hover rounded-lg px-4 py-2.5 transition-colors">
@@ -482,7 +482,7 @@ export function OnboardingWizard() {
 
             <div>
                 <h1 className="text-lg font-black text-foreground">Onboard New Client</h1>
-                <p className="text-xs text-foreground-muted">5-step setup — creates the organisation, its compliance baseline, its team, and its Wazuh enrollment group.</p>
+                <p className="text-xs text-foreground-muted">5-step setup — creates the organisation, its compliance baseline, its team, and its endpoint enrollment group.</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -561,7 +561,7 @@ export function OnboardingWizard() {
                 {step === 3 && (
                     <div className="space-y-4">
                         <h2 className="font-bold text-sm text-foreground">Compliance Frameworks</h2>
-                        <p className="text-xs text-foreground-muted -mt-2">NDPA applies to every Nigerian organisation and can&apos;t be unchecked. Toggle &quot;assess later&quot; instead of guessing a starting score.</p>
+                        <p className="text-xs text-foreground-muted -mt-2">NDPA applies to every organisation and can&apos;t be unchecked. Toggle &quot;assess later&quot; instead of guessing a starting score.</p>
                         {FRAMEWORKS.map((f) => {
                             const enabled = selectedFrameworks.has(f.id);
                             const later = assessLater.has(f.id);
@@ -635,7 +635,7 @@ export function OnboardingWizard() {
                         </div>
                         <CollectorWalkthrough orgId={draftOrgId} />
                         <div>
-                            <label className={labelCls}>Wazuh Agent Group Name</label>
+                            <label className={labelCls}>Endpoint Group Name</label>
                             <input value={wazuhGroup} onChange={(e) => setWazuhGroup(e.target.value)} placeholder="e.g. zenith-bank" className={`${inputCls} font-mono`} />
                             <p className="text-[10px] text-foreground-muted mt-1.5">Agents enrolled for this client will use this group name. Share the agent installation guide below with their IT team.</p>
                         </div>

@@ -5,7 +5,7 @@ import { Plus, X, Download, Save, Play, RefreshCw, Crosshair } from 'lucide-reac
 import { apiUrl, apiFetch } from '@/lib/api';
 import { levelTextClass } from '@/lib/severity';
 
-// Wired to the real Wazuh Indexer via POST /api/wazuh/hunt (routes/wazuh.ts). Saved Hunt
+// Wired to the real security telemetry index via POST /api/wazuh/hunt (routes/wazuh.ts). Saved Hunt
 // Templates and Export Results are still frontend-only — a template just fills the query
 // builder in, and Export just serializes whatever's in `results` state, neither needs its own
 // endpoint.
@@ -108,7 +108,7 @@ export function ThreatHunting() {
             }));
             setResults(mapped);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Hunt query failed — check the Wazuh indexer connection');
+            setError(err instanceof Error ? err.message : 'Hunt query failed — check the security telemetry index connection');
             setResults([]);
         } finally {
             setRunning(false);
@@ -125,7 +125,7 @@ export function ThreatHunting() {
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                     <h1 className="text-lg font-black text-foreground">Threat Hunting</h1>
-                    <p className="text-xs text-foreground-muted">SecOps & Response · Search and query Wazuh events with custom filters.</p>
+                    <p className="text-xs text-foreground-muted">SecOps & Response · Search and query security telemetry events with custom filters.</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                     <button className="flex items-center gap-2 border border-border text-foreground-muted text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-card-muted transition-colors"><Save size={14} /> Save Hunt</button>

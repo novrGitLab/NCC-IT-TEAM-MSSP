@@ -342,7 +342,7 @@ export async function acceptInvite(token: string, password: string, name: string
     await saveState((draft) => {
         const live = draft.invites.find((i) => i.token === token);
         if (!live || live.acceptedAt) throw new InviteError('This invitation has already been used.');
-        user = { id: randomUUID(), email: invite.email, passwordHash: hashPassword(password), role: invite.role, orgId: invite.orgId, name, createdAt: new Date().toISOString(), disabled: false };
+        user = { id: randomUUID(), email: invite.email, passwordHash: hashPassword(password), role: invite.role, orgId: invite.orgId, name, createdAt: new Date().toISOString(), disabled: false, jobFunction: invite.jobFunction || undefined };
         draft.users.push(user);
         live.acceptedAt = new Date().toISOString();
     });

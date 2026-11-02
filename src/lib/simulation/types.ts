@@ -28,6 +28,8 @@ export type UserRole = 'super_admin' | 'soc_manager' | 'analyst' | 'executive' |
 
 export interface UserRecord {
     id: string; email: string; passwordHash: string; role: UserRole; orgId: string | null; name: string; createdAt: string; disabled: boolean;
+    /** Job function from the invitation or seed (src/lib/team/invite-functions.ts). Descriptive only. */
+    jobFunction?: string;
 }
 
 export interface SessionRecord { id: string; userId: string; createdAt: string; expiresAt: string; }

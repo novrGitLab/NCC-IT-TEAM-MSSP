@@ -1,8 +1,8 @@
 'use client';
 
-// Collector Management (P1) — virtual collectors are simulation records, not real executable
+// Collector Management (P1) — virtual collectors are platform records, not real executable
 // agents. Every collector persists in the simulation state (src/lib/simulation/engine.ts) and
-// progresses through its lifecycle on the shared simulation clock (src/lib/simulation/
+// progresses through its lifecycle on the shared platform clock (src/lib/simulation/
 // scheduler.ts), not a client-side timer. Creating one here, or completing the onboarding
 // wizard's walkthrough, both write to the same collectors list.
 
@@ -162,7 +162,7 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
 
             {step === 4 && (
                 <div className="space-y-2">
-                    <p className="text-[11px] text-foreground-muted">Simulated connection validation — not a real network check.</p>
+                    <p className="text-[11px] text-foreground-muted">Illustrative connection validation — not a real network check.</p>
                     {VALIDATION_STEPS.map((s, i) => (
                         <div key={s} className="flex items-center gap-2 text-xs">
                             {validated > i ? <Check size={14} className="text-green" /> : <span className="w-3.5 h-3.5 rounded-full border-2 border-border motion-safe:animate-pulse" />}
@@ -178,7 +178,7 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
                         <>
                             <div className="w-14 h-14 bg-green/10 rounded-full flex items-center justify-center mx-auto"><Check size={28} className="text-green" /></div>
                             <p className="text-sm font-bold text-foreground">{created.name} registered</p>
-                            <p className="text-xs text-foreground-muted">It will progress through its connection lifecycle on the shared simulation clock and appear in the table below.</p>
+                            <p className="text-xs text-foreground-muted">It will progress through its connection lifecycle on the shared platform clock and appear in the table below.</p>
                         </>
                     ) : busy ? <p className="text-xs text-foreground-muted">Registering collector…</p> : null}
                     {error && <p className="text-xs text-red font-semibold">{error}</p>}
@@ -255,7 +255,7 @@ function CollectorInspector({ collector, onClose, onChanged }: { collector: Coll
                     : <ul className="space-y-1.5 text-xs">{linkedAssets.map((a) => <li key={a.id} className="flex justify-between gap-2"><span className="font-mono text-foreground">{a.value}</span><span className="text-foreground-muted capitalize">{a.criticality}</span></li>)}</ul>}
             </div>
             <div>
-                <SectionTitle title="Status timeline" hint="Advances automatically on the simulation clock" />
+                <SectionTitle title="Status timeline" hint="Advances automatically on the platform clock" />
                 <Timeline empty="No status changes yet." items={collector.statusHistory.slice().reverse().map((h, i) => ({ id: `${collector.id}-${i}`, at: h.at, title: STATUS_LABEL[h.status], meta: new Date(h.at).toLocaleTimeString(), body: h.note ?? null, tone: h.status === 'error' ? 'critical' : h.status === 'operational' ? 'good' : undefined }))} />
             </div>
             <div>
@@ -296,7 +296,7 @@ export function CollectorManagement() {
 
     return (
         <div className="space-y-5">
-            <PageHeader icon={Radio} title="Collector Management" description="Virtual collectors — simulation records that progress through a connection lifecycle on the shared simulation clock and, once operational, discover fictional assets into the inventory. No real agent is ever installed or connected."
+            <PageHeader icon={Radio} title="Collector Management" description="Virtual collectors — platform records that progress through a connection lifecycle on the shared platform clock and, once operational, discover fictional assets into the inventory. No real agent is ever installed or connected."
                 actions={<>
                     <button onClick={() => collectors.reload()} className={btn('secondary', 'md')}><RefreshCw className="w-3.5 h-3.5" aria-hidden /> Refresh</button>
                     <button onClick={() => setShowCreate(true)} className={btn('primary', 'md')}><Plus className="w-3.5 h-3.5" aria-hidden /> Create Collector</button>
@@ -310,10 +310,10 @@ export function CollectorManagement() {
             </section>
             {collectors.load.state === 'error' ? <ErrorState error={collectors.load.error} status={collectors.load.status} onRetry={collectors.reload} /> : (
                 <DataTable caption="Collectors" rows={rows} columns={columns} rowKey={(c) => c.id} onRowClick={setInspect} initialSort={{ key: 'heartbeat', dir: 'desc' }}
-                    empty={<EmptyState icon={Radio} title="No collectors yet" body="Create a collector to start simulated asset discovery for an organisation." action={<button onClick={() => setShowCreate(true)} className={btn('primary', 'md')}>Create Collector</button>} />} />
+                    empty={<EmptyState icon={Radio} title="No collectors yet" body="Create a collector to start illustrative asset discovery for an organisation." action={<button onClick={() => setShowCreate(true)} className={btn('primary', 'md')}>Create Collector</button>} />} />
             )}
             <Drawer open={showCreate} onClose={() => setShowCreate(false)} title="Create Collector">
-                <CreateCollectorWizard orgs={orgs.data?.organisations ?? []} onCancel={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); setMsg({ ok: true, text: 'Collector created — it will begin connecting on the next simulation tick.' }); collectors.reload(); }} />
+                <CreateCollectorWizard orgs={orgs.data?.organisations ?? []} onCancel={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); setMsg({ ok: true, text: 'Collector created — it will begin connecting on the next platform tick.' }); collectors.reload(); }} />
             </Drawer>
             <Drawer open={!!inspect} onClose={() => setInspect(null)} title={inspect?.name ?? ''} subtitle="Collector detail">
                 {inspect && <CollectorInspector collector={rows?.find((c) => c.id === inspect.id) ?? inspect} onClose={() => setInspect(null)} onChanged={() => collectors.reload()} />}

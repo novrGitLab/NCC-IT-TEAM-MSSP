@@ -74,7 +74,7 @@ export function TiIndicators() {
                     <Select label="Source" value={feed} onChange={reset(setFeed)} options={FEEDS} />
                     <Select label="Marking" value={tlp} onChange={reset(setTlp)} options={TLPS} />
                     <Select label="Sort" value={sort} onChange={reset(setSort)} options={SORTS} />
-                    <Toggle on={hosted} onChange={reset(setHosted)}>Hosted in Nigeria</Toggle>
+                    <Toggle on={hosted} onChange={reset(setHosted)}>Hosted locally</Toggle>
                     <Toggle on={matched} onChange={reset(setMatched)}>Matched in my records</Toggle>
                 </div>
                 {list.load.state === 'error' ? <ErrorState error={list.load.error} status={list.load.status} onRetry={list.reload} /> : (

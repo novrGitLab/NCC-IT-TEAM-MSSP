@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiUrl, apiFetch } from '@/lib/api';
+import { jobFunctionLabel } from '@/lib/team/invite-functions';
 
 // Team presence (GET /api/admin/team/presence): live status from heartbeats, plus last active,
 // 7-day activity, open cases assigned and response time this week — all real. Exports:
@@ -13,7 +14,7 @@ import { apiUrl, apiFetch } from '@/lib/api';
 
 export type PresenceStatus = 'online' | 'away' | 'offline';
 export interface TeamMemberPresence {
-    email: string; name: string; role: string; account_status: string; status: PresenceStatus;
+    email: string; name: string; role: string; job_function?: string | null; account_status: string; status: PresenceStatus;
     last_active: string | null; active_days: string[]; cases_assigned: number;
     avg_response_hrs: number | null; response_sample: number;
 }
@@ -104,7 +105,7 @@ export function PresenceCards({ members, now }: { members: TeamMemberPresence[];
                             </div>
                             <div className="min-w-0">
                                 <p className="text-sm font-bold text-foreground truncate">{m.name}</p>
-                                <p className="text-[11px] text-foreground-muted capitalize">{m.role.replace('_', ' ')}</p>
+                                <p className="text-[11px] text-foreground-muted capitalize">{jobFunctionLabel(m.job_function) ?? m.role.replace('_', ' ')}</p>
                             </div>
                             <span className="ml-auto text-[10px] font-bold text-foreground-muted flex items-center gap-1.5 shrink-0">
                                 <span className={`w-2 h-2 rounded-full ${dot.cls}`} aria-hidden /> {dot.label}

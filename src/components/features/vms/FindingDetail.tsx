@@ -3,7 +3,7 @@
 // One finding, in full (redesign, phase P20): risk explanation, threat context (CVSS, EPSS, KEV,
 // OSV), evidence, correlations, AI analysis, remediation tasks, comments and history. Changes go
 // through the existing endpoints, which check the permission and organisation and record each one
-// in the finding's history. Verified and reopened are never set here — only scans or Wazuh do that.
+// in the finding's history. Verified and reopened are never set here — only scans or endpoint monitoring do that.
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -89,7 +89,7 @@ export function FindingDetail({ id, onChanged }: { id: string; onChanged?: () =>
                 </div>
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 bg-card border border-border rounded-xl p-3">
                     <Fact k="Asset" v={f.asset_id ? <Link className="font-mono font-semibold text-purple dark:text-[var(--vz-prog-4)] hover:underline break-all" href={`/admin/vms/assets/${f.asset_id}`}>{f.asset_value}{f.port ? `:${f.port}` : ''}</Link> : <span className="font-mono break-all">{f.asset_value}</span>} />
-                    <Fact k="Source" v={f.source_class === 'wazuh' ? 'Wazuh agent' : (f.detected_by.join(', ') || 'Active scan')} />
+                    <Fact k="Source" v={f.source_class === 'wazuh' ? 'Endpoint agent' : (f.detected_by.join(', ') || 'Active scan')} />
                     <Fact k="Evidence" v={f.evidence_class ? f.evidence_class.replace(/_/g, ' ') : '—'} />
                     <Fact k="Scanner CVSS (severity)" v={data.scanner_cvss?.score !== null && data.scanner_cvss?.score !== undefined
                         ? <span title={data.scanner_cvss.vector ?? undefined}>{data.scanner_cvss.score}{data.scanner_cvss.version ? ` · CVSS v${data.scanner_cvss.version}` : ' · version not reported'}{data.scanner_cvss.source ? ` · ${data.scanner_cvss.source}` : ''}{data.scanner_cvss.vector && <span className="block font-mono text-[10px] text-foreground-muted break-all">{data.scanner_cvss.vector}</span>}</span>
@@ -236,7 +236,7 @@ export function FindingDetail({ id, onChanged }: { id: string; onChanged?: () =>
                 title={pending?.kind === 'status' ? `Mark as ${STATUS_LABEL[pending.to].toLowerCase()}?` : ''}
                 body={pending?.kind === 'status' && (pending.to === 'risk_accepted' || pending.to === 'false_positive')
                     ? 'The finding leaves the open queue. Give the reason; it is recorded in the finding history and the audit trail.'
-                    : pending?.kind === 'status' && pending.to === 'fixed_pending_verification' ? 'The finding stays open until a rescan (or Wazuh) shows it is gone.' : 'The change is recorded in the finding history.'}
+                    : pending?.kind === 'status' && pending.to === 'fixed_pending_verification' ? 'The finding stays open until a rescan (or endpoint monitoring) shows it is gone.' : 'The change is recorded in the finding history.'}
                 confirmLabel="Confirm"
                 reason={pending?.kind === 'status' ? { label: 'Reason', required: pending.to === 'risk_accepted' || pending.to === 'false_positive' } : undefined}
                 onCancel={() => setPending(null)}
@@ -245,7 +245,7 @@ export function FindingDetail({ id, onChanged }: { id: string; onChanged?: () =>
             <ConfirmDialog
                 open={pending?.kind === 'verify'}
                 title="Queue a verification scan?"
-                body={<>{f.source_class === 'wazuh' ? 'Wazuh findings are verified by the next Wazuh sync; nothing is scanned.' : <>A scan of <span className="font-mono">{f.asset_value}</span> is queued, only if the asset is still inside active vulnerability-scan scope. It runs on an engine that a connected worker has enabled.</>}</>}
+                body={<>{f.source_class === 'wazuh' ? 'Endpoint findings are verified by the next endpoint sync; nothing is scanned.' : <>A scan of <span className="font-mono">{f.asset_value}</span> is queued, only if the asset is still inside active vulnerability-scan scope. It runs on an engine that a connected worker has enabled.</>}</>}
                 confirmLabel="Queue verification"
                 onCancel={() => setPending(null)}
                 onConfirm={async () => { await run('POST', `/api/vms/findings/${f.id}/verify`, {}, 'Verification scan queued'); setPending(null); }}

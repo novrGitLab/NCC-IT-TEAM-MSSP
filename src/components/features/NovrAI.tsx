@@ -36,8 +36,8 @@ const SUGGESTED_PROMPTS = [
         category: 'Threat Intel'
     },
     {
-        title: 'Nigeria Threat Landscape',
-        prompt: 'Summarize active cyber threats and botnet activities targeting Nigerian ISP netblocks.',
+        title: 'Regional Threat Landscape',
+        prompt: 'Summarize active cyber threats and botnet activities targeting ISP netblocks.',
         category: 'Regional'
     },
     {
@@ -207,7 +207,7 @@ export function NovrAI() {
 
             const data = await res.json() as { reply?: string; error?: string };
             if (!res.ok || !data.reply) {
-                throw new Error(data.error ?? 'Failed to retrieve response from NovrAI');
+                throw new Error(data.error ?? 'Failed to retrieve response from the AI assistant');
             }
 
             setMessages([
@@ -219,7 +219,7 @@ export function NovrAI() {
                 }
             ]);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Something went wrong while connecting to NovrAI');
+            setError(e instanceof Error ? e.message : 'Something went wrong while connecting to the AI assistant');
         } finally {
             setLoading(false);
             if (textareaRef.current) {
@@ -255,7 +255,7 @@ export function NovrAI() {
                     <ul className="space-y-1.5 text-[11px] text-foreground-muted">
                         <li className="flex items-center gap-1.5">
                             <ChevronRight className="w-3 h-3 text-blue flex-shrink-0" />
-                            Wazuh log correlation & SIEM triage
+                            Security log correlation & SIEM triage
                         </li>
                         <li className="flex items-center gap-1.5">
                             <ChevronRight className="w-3 h-3 text-blue flex-shrink-0" />
@@ -263,7 +263,7 @@ export function NovrAI() {
                         </li>
                         <li className="flex items-center gap-1.5">
                             <ChevronRight className="w-3 h-3 text-blue flex-shrink-0" />
-                            Nigeria ISP & ASN threat enrichment
+                            ASN threat enrichment
                         </li>
                         <li className="flex items-center gap-1.5">
                             <ChevronRight className="w-3 h-3 text-blue flex-shrink-0" />
@@ -293,7 +293,7 @@ export function NovrAI() {
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-xs font-bold text-foreground">NovrAI Security Copilot</h2>
+                                <h2 className="text-xs font-bold text-foreground">AI Security Copilot</h2>
                                 {aiStatus && (
                                     <span
                                         title={aiStatus.provider === 'none' ? 'No AI provider key configured' : `Model: ${aiStatus.model}`}
@@ -337,9 +337,9 @@ export function NovrAI() {
                             <div className="w-12 h-12 rounded-2xl bg-orange/10 border border-orange/20 flex items-center justify-center mb-3 text-orange shadow-xs">
                                 <Bot size={24} />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">How can NovrAI assist your SOC today?</h3>
+                            <h3 className="text-base font-bold text-foreground">How can the AI assistant assist your SOC today?</h3>
                             <p className="text-xs text-foreground-muted mt-1 mb-6 max-w-md">
-                                Query real-time telemetry, analyze MITRE patterns, evaluate Nigerian ASN threats, or assess compliance posture using AI-powered intelligence.
+                                Query real-time telemetry, analyze MITRE patterns, evaluate ASN threats, or assess compliance posture using AI-powered intelligence.
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
@@ -379,7 +379,7 @@ export function NovrAI() {
                                         <>
                                             <FormattedResponse text={m.content} />
                                             <div className="flex items-center justify-between border-t border-border mt-3 pt-2 text-[10px] text-foreground-muted">
-                                                <span>NovrAI Intelligence</span>
+                                                <span>AI Intelligence</span>
                                                 <button
                                                     onClick={() => copyMessage(m.content, i)}
                                                     className="flex items-center gap-1 hover:text-foreground transition-colors"
@@ -434,7 +434,7 @@ export function NovrAI() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask NovrAI about security incidents, IP reputation, MITRE tactics, or remediation..."
+                            placeholder="Ask the AI assistant about security incidents, IP reputation, MITRE tactics, or remediation..."
                             rows={2}
                             className="flex-1 bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange transition-all resize-none shadow-xs"
                         />

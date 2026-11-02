@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Briefcase, Siren, Megaphone, Crosshair } from 'lucide-react';
 import { apiUrl, apiFetch } from '@/lib/api';
 
-// Header search across cases, advisories, cached IOC lookups and recent Wazuh alerts
+// Header search across cases, advisories, cached IOC lookups and recent security alerts
 // (GET /api/search). Admin only — the endpoint is analyst-authenticated.
 //
 // Results are stored with the query they answer, and "loading" is derived by comparing that to

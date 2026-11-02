@@ -14,7 +14,6 @@ const GoogleLogin = dynamic(
 import { AuthField } from '@/components/auth/AuthField';
 import { NigeriaLoginMap } from '@/components/auth/NigeriaLoginMap';
 import { Logo } from '@/components/shared/Logo';
-import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from '@/lib/authDisplay';
 import { refreshAdminUserCache } from '@/lib/admin-auth';
 
 // Read as a full static expression, not destructured — Next.js inlines NEXT_PUBLIC_* vars at
@@ -166,12 +165,6 @@ export default function AdminLoginPage() {
                             {submitting ? 'Signing in…' : 'Sign In'}
                         </button>
                     </form>
-
-                    {/* Evaluation credentials — this environment has no production backend or real
-                        accounts; everything after sign-in is simulated. */}
-                    <p className="text-foreground-muted text-xs text-center mt-4">
-                        Evaluation credentials: <span className="font-mono">{DEMO_ADMIN_EMAIL}</span> / <span className="font-mono">{DEMO_ADMIN_PASSWORD}</span>
-                    </p>
 
                     {/* Google Sign-In stays hidden unless NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true'.
                         This demo build's /api/auth/google path intentionally returns 501 — it is

@@ -6,8 +6,8 @@
 // empty-but-valid response, never a fake success payload shaped like a crash or a silent 200 with
 // lies.
 
-import { DEMO_ALERTS, DEMO_ALERT_STATS, byAlertId, patchAlert } from './alerts';
-import { DEMO_CASES, DEMO_CASES_SUMMARY, DEMO_PLAYBOOKS, DEMO_APPROVALS } from './incidents';
+import { DEMO_ALERTS, alertStats, byAlertId, patchAlert } from './alerts';
+import { DEMO_CASES, casesSummary, DEMO_PLAYBOOKS, DEMO_APPROVALS } from './incidents';
 import { DEMO_TI_FEEDS, DEMO_TI_OVERVIEW, DEMO_TI_ACTORS, DEMO_TI_SOURCE_NAMED, DEMO_TI_ACTOR_NOTES, DEMO_TI_MATCHES, DEMO_TI_MAP_POINTS, DEMO_TI_VULNERABILITIES } from './threats';
 import { DEMO_WEEKLY_INSIGHTS, DEMO_REPORTS } from './reports';
 import { DEMO_WORKER_STATUS, DEMO_DEPLOYMENT_STEPS } from './collectors';
@@ -77,7 +77,7 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
     if (/^\/api\/ti\/feeds\/[^/]+\/run$/.test(path) && method === 'POST') return { status: 200, data: { status: 'ok', counts: { new: 0 } } };
 
     // --- SecOps / Cases / Alerts ---
-    if (path === '/api/cases' || path === '/api/incidents') return { status: 200, data: { cases: DEMO_CASES, total: DEMO_CASES.length, summary: DEMO_CASES_SUMMARY } };
+    if (path === '/api/cases' || path === '/api/incidents') return { status: 200, data: { cases: DEMO_CASES, total: DEMO_CASES.length, summary: casesSummary() } };
     {
         // CaseWorkbench.tsx reads `data.case.id` — a bare case object here (no `.case` wrapper)
         // threw a TypeError on open, crashing the detail view rather than just showing it empty.
@@ -109,7 +109,7 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
     }
     if (path === '/api/playbooks') return { status: 200, data: { playbooks: DEMO_PLAYBOOKS } };
     if (path.startsWith('/api/approvals') || path.startsWith('/api/soar/response-requests')) return { status: 200, data: { approvals: DEMO_APPROVALS } };
-    if (path === '/api/alerts/stats') return { status: 200, data: DEMO_ALERT_STATS };
+    if (path === '/api/alerts/stats') return { status: 200, data: alertStats() };
     {
         // Specific /api/alerts/:id... routes MUST be checked before the plain-list catch-all below —
         // that catch-all previously matched every one of these too (startsWith) and returned the
@@ -201,7 +201,7 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
     if (path.startsWith('/api/insights')) return { status: 200, data: DEMO_WEEKLY_INSIGHTS };
 
     // --- Security Assessment report card (client portal + staff preview) --- figures derived
-    // from DEMO_CASES/DEMO_CASES_SUMMARY so this can't show a different case count than Cases/SecOps.
+    // from the live case list (casesSummary) so this can't show a different case count than Cases/SecOps.
     {
         const closed = DEMO_CASES.filter((c) => c.status === 'closed');
         const monthly = [
@@ -210,14 +210,15 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
             { month: 'Oct', sla_rate: 92, resolved: closed.length },
         ];
         const definitions = { sla_target_hours: { critical: 4, high: 8, medium: 24, low: 72 }, sla_secure_threshold_pct: 85, detection_time: 'Not tracked yet — requires a connected detection pipeline.' };
-        const posture = DEMO_CASES_SUMMARY.critical > 0 ? 'at_risk' : 'secure';
+        const summary = casesSummary();
+        const posture = summary.critical > 0 ? 'at_risk' : 'secure';
         if (path === '/api/client/security-assessment') {
             return {
                 status: 200,
                 data: {
                     org_id: 'org-demo-1', org_name: 'NCC SOC Evaluation Org', detection_time_hrs: null,
                     response_time_hrs: 1.4, response_sample: DEMO_CASES.length, close_time_hrs: closed.length ? 6.2 : null,
-                    open_cases: DEMO_CASES_SUMMARY.active, closed_this_month: closed.length, resolved_30d: closed.length,
+                    open_cases: summary.active, closed_this_month: closed.length, resolved_30d: closed.length,
                     sla_rate: closed.length ? 92 : null, posture, trend: 'stable', monthly,
                     last_closed: closed.map((c) => ({ id: c.id, case_number: c.id, title: c.title, severity: c.severity, close_time_hrs: 6.2, within_sla: true, resolved_at: c.updated_at })),
                     engagement: { score: 72, components: [
@@ -233,8 +234,8 @@ export function demoRespond(method: string, path: string, query: URLSearchParams
             return {
                 status: 200,
                 data: {
-                    summary: { active_clients: 1, avg_detection_time_hrs: null, avg_close_time_hrs: closed.length ? 6.2 : null, open_cases: DEMO_CASES_SUMMARY.active, sla_rate: closed.length ? 92 : null, clients_below_sla: 0 },
-                    clients: [{ org_id: 'org-demo-1', org_name: 'NCC SOC Evaluation Org', detection_time_hrs: null, close_time_hrs: closed.length ? 6.2 : null, open_cases: DEMO_CASES_SUMMARY.active, closed_this_month: closed.length, resolved_30d: closed.length, sla_rate: closed.length ? 92 : null, posture, trend: 'stable', last_updated: new Date().toISOString() }],
+                    summary: { active_clients: 1, avg_detection_time_hrs: null, avg_close_time_hrs: closed.length ? 6.2 : null, open_cases: summary.active, sla_rate: closed.length ? 92 : null, clients_below_sla: 0 },
+                    clients: [{ org_id: 'org-demo-1', org_name: 'NCC SOC Evaluation Org', detection_time_hrs: null, close_time_hrs: closed.length ? 6.2 : null, open_cases: summary.active, closed_this_month: closed.length, resolved_30d: closed.length, sla_rate: closed.length ? 92 : null, posture, trend: 'stable', last_updated: new Date().toISOString() }],
                     monthly, definitions, generated_at: new Date().toISOString(),
                 },
             };
