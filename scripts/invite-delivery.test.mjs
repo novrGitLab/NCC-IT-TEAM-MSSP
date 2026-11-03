@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const srcPath = join(root, 'src', 'lib', 'simulation', 'email', 'invites.ts');
+const srcPath = join(root, 'backend', 'src', 'simulation', 'email', 'invites.ts');
 const cacheDir = join(root, 'node_modules', '.cache', 'invite-delivery-test');
 const outPath = join(cacheDir, 'invites.mjs');
 mkdirSync(cacheDir, { recursive: true });

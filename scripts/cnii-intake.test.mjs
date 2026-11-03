@@ -13,7 +13,7 @@ import ts from 'typescript';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cacheDir = join(root, 'node_modules', '.cache', 'cnii-intake-test');
 mkdirSync(cacheDir, { recursive: true });
-const src = join(root, 'src', 'lib', 'cnii-intake.ts');
+const src = join(root, 'frontend', 'src', 'lib', 'cnii-intake.ts');
 const out = ts.transpileModule(readFileSync(src, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 }, fileName: src });
 writeFileSync(join(cacheDir, 'cnii-intake.mjs'), out.outputText);
 const m = await import(pathToFileURL(join(cacheDir, 'cnii-intake.mjs')).href);

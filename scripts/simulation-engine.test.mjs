@@ -13,7 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const srcDir = join(root, 'src', 'lib', 'simulation');
+const srcDir = join(root, 'backend', 'src', 'simulation');
 const cacheDir = join(root, 'node_modules', '.cache', 'simulation-engine-test');
 mkdirSync(cacheDir, { recursive: true });
 
@@ -22,7 +22,7 @@ mkdirSync(cacheDir, { recursive: true });
 // node:url) — nothing touches next/headers or next/server, so this subtree transpiles and runs
 // standalone under plain Node ESM. auth/guard.ts and auth/session.ts (which DO need Next.js'
 // request context) are intentionally excluded — engine.ts never imports them.
-const files = ['types.ts', 'store.ts', 'scenarios.ts', 'engine.ts', 'clock.ts', 'scheduler.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'auth/users.ts'];
+const files = ['types.ts', 'store.ts', 'scenarios.ts', 'engine.ts', 'clock.ts', 'scheduler.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'auth/users.ts', 'generators/soc.ts', 'soc-policy.ts', 'soc-runtime.ts'];
 for (const file of files) {
     const srcPath = join(srcDir, file);
     const outPath = join(cacheDir, file.replace(/\.ts$/, '.mjs'));
@@ -39,6 +39,7 @@ mkdirSync(scratchCwd, { recursive: true });
 rmSync(join(scratchCwd, 'data'), { recursive: true, force: true });
 const originalCwd = process.cwd();
 process.chdir(scratchCwd);
+process.env.SIM_DATA_DIR = join(scratchCwd, 'data');
 
 const engine = await import(pathToFileURL(join(cacheDir, 'engine.mjs')).href);
 const { loadState, resetState } = await import(pathToFileURL(join(cacheDir, 'store.mjs')).href);

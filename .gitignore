@@ -20,3 +20,24 @@ next-env.d.ts
 # simulation engine persisted state (src/lib/simulation/store.ts) — runtime data, not source.
 data/*
 !data/.gitkeep
+
+# deployment and scratch output (never source)
+.railway/
+scratch-*
+*.log
+
+# local simulation state, invitations and secrets
+data/*
+!data/.gitkeep
+data-verify/
+.env
+.env.*
+!.env.example
+
+# caches, virtualenvs, build outputs
+.cache/
+.venv/
+.next/
+out/
+*.tsbuildinfo
+

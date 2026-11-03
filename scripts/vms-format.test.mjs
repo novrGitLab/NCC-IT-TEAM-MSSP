@@ -14,7 +14,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cacheDir = join(root, 'node_modules', '.cache', 'vms-format-test');
 mkdirSync(cacheDir, { recursive: true });
 async function load(rel, name) {
-    const src = join(root, 'src', rel);
+    const src = join(root, 'frontend', 'src', rel);
     const out = ts.transpileModule(readFileSync(src, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 }, fileName: src });
     writeFileSync(join(cacheDir, `${name}.mjs`), out.outputText);
     return import(pathToFileURL(join(cacheDir, `${name}.mjs`)).href);

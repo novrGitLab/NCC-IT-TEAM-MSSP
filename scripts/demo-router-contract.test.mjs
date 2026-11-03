@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const srcDir = join(root, 'src', 'lib', 'demo');
+const srcDir = join(root, 'frontend', 'src', 'lib', 'demo');
 const cacheDir = join(root, 'node_modules', '.cache', 'demo-router-contract-test');
 mkdirSync(cacheDir, { recursive: true });
 

@@ -12,14 +12,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const appDir = join(root, 'src', 'app');
+const appDir = join(root, 'frontend', 'src', 'app');
 
 // Transpile into node_modules/.cache so `lucide-react` resolves from the project's node_modules.
 // nav.ts imports the VMS section list (config/vmsSections.ts), so that is transpiled alongside it.
 const cacheDir = join(root, 'node_modules', '.cache', 'nav-check');
 mkdirSync(cacheDir, { recursive: true });
 function transpile(name) {
-    const source = join(root, 'src', 'config', `${name}.ts`);
+    const source = join(root, 'frontend', 'src', 'config', `${name}.ts`);
     const out = ts.transpileModule(readFileSync(source, 'utf8'), {
         compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020, verbatimModuleSyntax: false },
         fileName: source,

@@ -24,7 +24,7 @@ async function load(source, name) {
     return import(pathToFileURL(file).href);
 }
 
-const frontend = await load(join(root, 'src', 'lib', 'severity.ts'), 'frontend');
+const frontend = await load(join(root, 'frontend', 'src', 'lib', 'severity.ts'), 'frontend');
 const backendSource = join(root, '..', 'backend', 'src', 'lib', 'severity.ts');
 
 test('severityFromLevel: boundary values', () => {

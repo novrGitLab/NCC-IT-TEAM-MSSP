@@ -1,0 +1,16 @@
+{
+  "name": "@ncc-it/backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NCC IT simulation domain: state, SOC policy and approvals, reports, contracts. Imported by the frontend's route handlers; not an HTTP server.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
