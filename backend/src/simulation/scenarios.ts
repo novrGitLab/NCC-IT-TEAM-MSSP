@@ -5,7 +5,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { buildSeedAssets, buildSeedEventsByAsset, buildSeedEvents, buildSeedServicesByAsset, buildSeedTechByAsset } from './generators/assets';
 import { buildSeedFindings, buildSeedScans } from './generators/findings';
-import { hashPassword } from './auth/users';
+import { hashPassword, verifyPassword } from './auth/users';
 import { buildSocSeed } from './generators/soc';
 import type { SimState, UserRecord, UserRole } from './types';
 import { SIM_STATE_VERSION } from './types';
@@ -48,17 +48,34 @@ export function socSeedFields(nowIso: string, assets: { id: string; value: strin
     return { socAlerts: seed.alerts, socCases: seed.cases, socApprovals: seed.approvals };
 }
 
-/** Creates the administrator from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD when no super admin exists.
- *  There is no default password: without SEED_ADMIN_PASSWORD no administrator account is created. */
-export function ensureAdministrator(state: Pick<SimState, 'users'>): boolean {
+/** Keeps the administrator account in line with SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD. There is no
+ *  default password. The account is created when it is missing. For an existing account the configured
+ *  password is applied only when ADMIN_PASSWORD_RESET=true (that account's sessions then end). Otherwise
+ *  a mismatch is reported without printing either password and the stored password is kept. Nothing else
+ *  in the state changes. */
+export function ensureAdministrator(state: Pick<SimState, 'users' | 'sessions'>): boolean {
     const password = process.env.SEED_ADMIN_PASSWORD;
-    if (!password || state.users.some((u) => u.role === 'super_admin')) return false;
+    if (!password) return false;
     const email = (process.env.SEED_ADMIN_EMAIL || 'admin@ncc-it.local').trim().toLowerCase();
-    state.users.push({
-        id: randomUUID(), email, passwordHash: hashPassword(password), role: 'super_admin', orgId: null,
-        name: 'Administrator', createdAt: new Date().toISOString(), disabled: false,
-    });
-    return true;
+    const existing = state.users.find((u) => u.email === email && u.role !== 'portal_user');
+    if (!existing) {
+        state.users.push({
+            id: randomUUID(), email, passwordHash: hashPassword(password), role: 'super_admin', orgId: null,
+            name: 'Administrator', createdAt: new Date().toISOString(), disabled: false,
+        });
+        return true;
+    }
+    if (existing.role !== 'super_admin') return false;
+    if (process.env.ADMIN_PASSWORD_RESET === 'true') {
+        existing.passwordHash = hashPassword(password);
+        existing.disabled = false;
+        state.sessions = state.sessions.filter((session) => session.userId !== existing.id);
+        return true;
+    }
+    if (!verifyPassword(password, existing.passwordHash)) {
+        console.warn(`[auth] SEED_ADMIN_PASSWORD does not match the stored password for ${email}; the stored password is kept. Set ADMIN_PASSWORD_RESET=true for one start to apply the configured password, then remove it.`);
+    }
+    return false;
 }
 
 /** Adds the SOC dataset to state written before it existed. Records already present are kept. */

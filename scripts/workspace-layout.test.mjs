@@ -15,6 +15,21 @@ import ts from 'typescript';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const backendSrc = join(root, 'backend', 'src');
 
+const outDirShared = join(root, 'node_modules', '.cache', 'workspace-layout-test');
+function transpileChain() {
+    const outDir = outDirShared;
+    mkdirSync(outDir, { recursive: true });
+const chain = ['types.ts', 'store.ts', 'scenarios.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'generators/soc.ts', 'auth/users.ts', 'soc-policy.ts', 'soc-runtime.ts', 'soc-store.ts'];
+for (const file of chain) {
+    const srcPath = join(backendSrc, 'simulation', file);
+    const outPath = join(outDir, file.replace(/\.ts$/, '.mjs'));
+    mkdirSync(dirname(outPath), { recursive: true });
+    const out = ts.transpileModule(readFileSync(srcPath, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: srcPath });
+    writeFileSync(outPath, out.outputText.replace(/from '(\.\.?\/[^']+)'/g, "from '$1.mjs'"));
+}
+    return outDir;
+}
+
 function sourceFiles(dir, out = []) {
     for (const name of readdirSync(dir)) {
         const p = join(dir, name);
@@ -64,16 +79,7 @@ test('the presentation sign-in bypass is not present in the sign-in handler', ()
 });
 
 test('the state file resolves to the workspace root data directory regardless of the start directory', { skip: !existsSync(join(root, 'data', 'simulation-state.json')) && 'no local state file at data/simulation-state.json' }, () => {
-    const outDir = join(root, 'node_modules', '.cache', 'workspace-layout-test');
-    mkdirSync(outDir, { recursive: true });
-    const chain = ['types.ts', 'store.ts', 'scenarios.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'generators/soc.ts', 'auth/users.ts', 'soc-policy.ts', 'soc-runtime.ts', 'soc-store.ts'];
-    for (const file of chain) {
-        const srcPath = join(backendSrc, 'simulation', file);
-        const outPath = join(outDir, file.replace(/\.ts$/, '.mjs'));
-        mkdirSync(dirname(outPath), { recursive: true });
-        const out = ts.transpileModule(readFileSync(srcPath, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: srcPath });
-        writeFileSync(outPath, out.outputText.replace(/from '(\.\.?\/[^']+)'/g, "from '$1.mjs'"));
-    }
+    const outDir = transpileChain();
     const storeUrl = pathToFileURL(join(outDir, 'store.mjs')).href;
     const env = { ...process.env };
     delete env.SIM_DATA_DIR;
@@ -87,7 +93,7 @@ test('the state file resolves to the workspace root data directory regardless of
 });
 
 test('no default administrator password: a fresh state without SEED_ADMIN_PASSWORD has no super admin and no known password', () => {
-    const outDir = join(root, 'node_modules', '.cache', 'workspace-layout-test');
+    const outDir = transpileChain();
     const storeUrl = pathToFileURL(join(outDir, 'store.mjs')).href;
     const usersUrl = pathToFileURL(join(outDir, 'auth', 'users.mjs')).href;
     const scratchData = join(outDir, 'no-seed-password-data');
