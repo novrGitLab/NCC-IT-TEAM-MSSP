@@ -52,7 +52,7 @@ export default function SetPasswordPage() {
     return (
         <main className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 space-y-5">
-                <Logo size="md" />
+                <Logo size="lg" />
                 {done ? (
                     <div className="space-y-3">
                         <h1 className="text-lg font-black text-foreground">Password set</h1>

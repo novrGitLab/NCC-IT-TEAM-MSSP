@@ -24,7 +24,7 @@ import { SIM_STATE_VERSION } from './types';
 // in normal use; defaults to data/ under the project root exactly as before.
 /** The monorepo root (the package.json that declares workspaces), so the state file stays in the same
  *  place whether the server is started from the root or from frontend/. Falls back to the start dir. */
-function workspaceRoot(start: string): string {
+export function workspaceRoot(start: string): string {
     let dir = start;
     for (;;) {
         const pkg = join(dir, 'package.json');
@@ -68,6 +68,8 @@ function readFromDisk(): SimState | null {
     if (!existsSync(STATE_FILE)) return null;
     try {
         const raw = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
+        // Additive: state written before this array existed keeps every record; it simply has none yet.
+        if (raw && typeof raw === 'object' && !Array.isArray(raw.collectorMappings)) raw.collectorMappings = [];
         assertValidState(raw);
         if (raw.version !== SIM_STATE_VERSION) return null; // schema changed — reseed rather than guess a migration
         ensureRepresentativeStaff(raw); // additive only: existing users and invitations are kept

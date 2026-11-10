@@ -441,6 +441,7 @@ export async function removeCollector(id: string): Promise<boolean> {
     await saveState((draft) => {
         const before = draft.collectors.length;
         draft.collectors = draft.collectors.filter((c) => c.id !== id);
+        draft.collectorMappings = draft.collectorMappings.filter((m) => m.collectorId !== id);
         removed = draft.collectors.length < before;
     });
     return removed;

@@ -27,7 +27,7 @@ const PORTED_EXACT = new Set([
     '/api/invites',
     '/api/organisations', '/api/admin/collectors', '/api/collectors', '/api/posture/summary',
     '/api/secops/handover', '/api/secops/team', '/api/admin/team/presence', '/api/vms/remediation-plan', '/api/insights/weekly',
-    '/api/alerts', '/api/alerts/stats', '/api/cases', '/api/approvals', '/api/response-approvals', '/api/soc/events', '/api/sim/advance',
+    '/api/collectors/mappings', '/api/collectors/agents', '/api/collectors/agents/download', '/api/alerts', '/api/alerts/stats', '/api/cases', '/api/approvals', '/api/response-approvals', '/api/soc/events', '/api/sim/advance',
 ]);
 const PORTED_PATTERNS = [
     /^\/api\/vms\/assets\/[^/]+$/, /^\/api\/vms\/assets\/[^/]+\/graph$/, /^\/api\/vms\/assets\/[^/]+\/onboarding-scan$/,
@@ -37,6 +37,7 @@ const PORTED_PATTERNS = [
     /^\/api\/organisations\/[^/]+$/, /^\/api\/organisations\/[^/]+\/setup$/, /^\/api\/organisations\/[^/]+\/users$/,
     /^\/api\/collectors\/[^/]+$/, /^\/api\/collectors\/[^/]+\/events$/,
     /^\/api\/posture\/[^/]+$/,
+    /^\/api\/collectors\/mappings\/[^/]+$/,
     /^\/api\/alerts\/[^/]+$/, /^\/api\/alerts\/[^/]+\/(status|case|events)$/,
     /^\/api\/cases\/[^/]+$/, /^\/api\/cases\/[^/]+\/(escalate|execute-step|report)$/,
     /^\/api\/approvals\/[^/]+\/decision$/, /^\/api\/response-approvals\/[^/]+\/(approve|reject)$/,

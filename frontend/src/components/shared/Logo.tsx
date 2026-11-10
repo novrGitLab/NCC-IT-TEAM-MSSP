@@ -1,17 +1,21 @@
-// NCC IT rebrand (2026-10-31): the source app's logo was a baked-in raster wordmark
-// image ("NOVRSOC by CYBERNOVR", novrsoc.jpg). No image-generation tooling is available in
-// this extraction pass, so the brand mark is a text wordmark instead — flagged here rather
-// than silently left showing the old brand's image.
+// Official Nigerian Communications Commission logo, used unmodified (original 860x602 artwork). Height
+// is fixed and width follows the artwork's own aspect ratio, so the emblem is never stretched or cropped.
+// A white plate keeps the artwork legible on dark backgrounds.
 const SIZES = {
-    sm: 'text-base',
-    md: 'text-xl',
-    lg: 'text-3xl',
+    sm: 'h-8',
+    md: 'h-12',
+    lg: 'h-16',
 } as const;
 
 export function Logo({ size = 'md' }: { size?: keyof typeof SIZES }) {
     return (
-        <span className={`${SIZES[size]} font-extrabold tracking-tight text-[#2563EB] flex-shrink-0`}>
-            NCC IT
+        <span className="inline-flex w-fit self-start flex-shrink-0 items-center rounded-md bg-white p-1 shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset; keeps the exact artwork without re-encoding */}
+            <img
+                src="/brand/ncc-logo.jpg"
+                alt="Nigerian Communications Commission (NCC) logo"
+                className={`${SIZES[size]} w-auto object-contain`}
+            />
         </span>
     );
 }

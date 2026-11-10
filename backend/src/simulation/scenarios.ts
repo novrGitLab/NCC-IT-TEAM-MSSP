@@ -138,6 +138,7 @@ export function buildDefaultState(): SimState {
         auditLog: [],
 
         handoverLogs: [],
+        collectorMappings: [],
         ...socSeedFields(new Date(now).toISOString(), assets),
     };
 }

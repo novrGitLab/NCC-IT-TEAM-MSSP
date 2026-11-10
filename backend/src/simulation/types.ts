@@ -166,10 +166,25 @@ export interface SimState {
     // SecOps management (src/app/api/secops/handover, src/components/features/ShiftHandover.tsx)
     handoverLogs: HandoverLogRecord[];
 
+    // Collector-to-NCC-infrastructure mappings (src/simulation/collector-mapping.ts)
+    collectorMappings: CollectorInfraMappingRecord[];
+
     // SOC alerts, cases and approvals (src/lib/simulation/soc-runtime.ts, soc-store.ts)
     socAlerts: SocAlertRecord[];
     socCases: SocCaseRecord[];
     socApprovals: SocApprovalRecord[];
+}
+
+export interface CollectorInfraMappingRecord {
+    id: string;
+    orgId: string;
+    collectorId: string;
+    /** Stable id from backend/src/contracts/ncc-infrastructure.ts. */
+    infrastructureId: string;
+    createdAt: string;
+    updatedAt: string;
+    createdBy: string;
+    updatedBy: string;
 }
 
 export type SocSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';

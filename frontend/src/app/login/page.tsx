@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
             <div className="w-full lg:w-2/5 flex flex-col justify-between bg-white p-10 lg:p-16 min-h-screen">
 
                 {/* Top — logo */}
-                <Logo size="md" />
+                <Logo size="lg" />
 
                 {/* Middle — form */}
                 <div className="w-full max-w-sm mx-auto">

@@ -110,7 +110,7 @@ export function Header({ initials, onSignOut, onMenu }: HeaderProps) {
                     className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-blue bg-[#F1F6FF] border border-[#DBEAFE] rounded-full px-2 py-0.5"
                     title="Telemetry, scan results and alerts in this environment are illustrative. No external systems are connected."
                 >
-                    Illustrative telemetry
+                    <span className="sm:hidden">Illustrative</span><span className="hidden sm:inline">Illustrative telemetry</span>
                 </span>
                 <span className="text-grey-300 hidden sm:inline">/</span>
                 {/* Long path segments (e.g. a domain name) must not push the header controls off-screen. */}
