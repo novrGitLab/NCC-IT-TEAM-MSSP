@@ -14,6 +14,7 @@ import { useVmsData, useVmsCan, vmsSend } from './vms/data';
 import { CollectorMappingWorkspace, CollectorMappedInfrastructure } from './CollectorMappingWorkspace';
 import { apiFetch, apiUrl } from '@/lib/api';
 import { relTime } from '@/lib/vmsFormat';
+import { fmtWat } from '@/lib/vms';
 
 type CollectorStatus = 'created' | 'configuring' | 'connecting' | 'validating' | 'collecting' | 'operational' | 'paused' | 'error';
 interface Collector {
@@ -62,7 +63,7 @@ const labelCls = 'text-xs font-medium text-foreground-muted uppercase tracking-w
 
 function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onCreated: () => void; onCancel: () => void }) {
     const [step, setStep] = useState(0);
-    const [infraId, setInfraId] = useState<string | null>(null);
+    const [infraIds, setInfraIds] = useState<string[]>([]);
     const [kind, setKind] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [orgId, setOrgId] = useState(orgs[0]?.id ?? '');
@@ -74,9 +75,11 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
     const [validated, setValidated] = useState<number>(-1);
     const [created, setCreated] = useState<{ name: string } | null>(null);
 
-    const item = infraId ? nccInfrastructureById(infraId) : null;
-    const methods = item ? METHODS_FOR_CATEGORY[item.engineCategory] ?? [] : [];
-    const canAdvance = step === 0 ? !!item : step === 1 ? !!kind : step === 2 ? name.trim().length > 0 && !!orgId : true;
+    const items = infraIds.map((id) => nccInfrastructureById(id)).filter((i): i is NccInfrastructureItem => !!i);
+    // Methods that suit any of the selected items, in catalogue order, without repeats.
+    const methods = [...new Set(items.flatMap((i) => METHODS_FOR_CATEGORY[i.engineCategory] ?? []))];
+    const canAdvance = step === 0 ? items.length > 0 : step === 1 ? !!kind && methods.includes(kind) : step === 2 ? name.trim().length > 0 && !!orgId : true;
+    const toggleItem = (id: string) => { setInfraIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id])); setKind(null); };
 
     const runValidation = () => {
         setValidated(0);
@@ -84,11 +87,11 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
     };
 
     const submit = async () => {
-        if (!name.trim() || !orgId || !kind || !item) { setError('Name, organisation, method and infrastructure are required.'); return; }
+        if (!name.trim() || !orgId || !kind || items.length === 0) { setError('Name, organisation, method and at least one infrastructure item are required.'); return; }
         setBusy(true);
         setError(null);
         const r = await vmsSend('POST', '/api/collectors', {
-            name: name.trim(), org_id: orgId, collector_kind: kind, ncc_infrastructure_id: item.id,
+            name: name.trim(), org_id: orgId, collector_kind: kind, ncc_infrastructure_ids: items.map((i) => i.id),
             business_unit: businessUnit.trim(), asset_scope: assetScope.trim(), collection_interval_minutes: Number(interval) || 15,
         });
         setBusy(false);
@@ -118,13 +121,14 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
 
             {step === 0 && (
                 <div className="space-y-2">
-                    <p className="text-xs text-foreground-muted">Choose the NCC critical infrastructure this collector will be responsible for. Quantities are from the NCC register.</p>
-                    <div role="radiogroup" aria-label="NCC critical infrastructure" className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+                    <p className="text-xs text-foreground-muted">Choose one or more NCC critical infrastructure items this collector will be responsible for. Quantities are from the NCC register.</p>
+                    <p className="text-[11px] font-semibold text-foreground">{items.length} selected</p>
+                    <div role="group" aria-label="NCC critical infrastructure" className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
                         {NCC_INFRASTRUCTURE.map((i) => {
                             const Icon = CATEGORY_ICON[i.engineCategory];
-                            const on = infraId === i.id;
+                            const on = infraIds.includes(i.id);
                             return (
-                                <button key={i.id} role="radio" aria-checked={on} onClick={() => { setInfraId(i.id); setKind(null); }}
+                                <button key={i.id} role="checkbox" aria-checked={on} onClick={() => toggleItem(i.id)}
                                     className={`w-full text-left flex items-start gap-3 rounded-lg border p-2.5 transition-colors ${on ? 'border-purple bg-purple/5' : 'border-border hover:border-purple/40'}`}>
                                     <Icon size={16} className={`mt-0.5 shrink-0 ${on ? 'text-purple' : 'text-foreground-muted'}`} aria-hidden />
                                     <span className="min-w-0">
@@ -140,7 +144,7 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
 
             {step === 1 && (
                 <div className="space-y-2">
-                    <p className="text-xs text-foreground-muted">Collection methods appropriate for {item?.name}:</p>
+                    <p className="text-xs text-foreground-muted">Collection methods appropriate for {items.map((i) => i.name).join(', ')}:</p>
                     {methods.map((m) => (
                         <button key={m} onClick={() => setKind(m)} className={`w-full text-left rounded-lg border p-3 text-xs font-semibold transition-colors ${kind === m ? 'border-purple bg-purple/5 text-purple' : 'border-border text-foreground-muted hover:border-purple/40'}`}>
                             {KIND_OPTIONS.find(([v]) => v === m)?.[1] ?? m}
@@ -191,8 +195,8 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
                     {created ? (
                         <>
                             <div className="w-14 h-14 bg-green/10 rounded-full flex items-center justify-center mx-auto"><Check size={28} className="text-green" /></div>
-                            <p className="text-sm font-bold text-foreground">{created.name} registered and mapped to {item?.name}</p>
-                            <p className="text-xs text-foreground-muted">It will progress through its connection lifecycle on the platform clock. The mapping is saved and listed in Collector Mapping.</p>
+                            <p className="text-sm font-bold text-foreground">{created.name} registered and mapped to {items.length} NCC infrastructure item{items.length === 1 ? '' : 's'}</p>
+                            <p className="text-xs text-foreground-muted">It will progress through its simulated connection lifecycle on the platform clock. Once operational it reports a simulated asset for each mapped item, and those assets appear in Asset Inventory.</p>
                         </>
                     ) : busy ? <p className="text-xs text-foreground-muted">Registering collector…</p> : null}
                     {error && <p className="text-xs text-red font-semibold">{error}</p>}
@@ -213,12 +217,16 @@ function CreateCollectorWizard({ orgs, onCreated, onCancel }: { orgs: Org[]; onC
     );
 }
 
-interface LinkedAsset { id: string; value: string; asset_type: string; criticality: string; discovery_sources: string[] }
+interface LinkedAsset {
+    id: string; value: string; asset_type: string; criticality: string; discovery_sources: string[]; status: string; last_seen: string; simulated?: boolean;
+    ncc?: { name: string; type: string } | null; discovery?: { health: 'reporting' | 'not_reporting' } | null;
+}
 
 function CollectorInspector({ collector, onClose, onChanged }: { collector: Collector; onClose: () => void; onChanged: () => void }) {
     const events = useVmsData<{ events: IngestionEvent[] }>(`/api/collectors/${collector.id}/events`);
     const assets = useVmsData<{ assets: LinkedAsset[] }>('/api/vms/assets');
     const linkedAssets = (assets.data?.assets ?? []).filter((a) => a.discovery_sources.includes(`collector:${collector.id}`));
+    const lastDiscovery = (events.data?.events ?? []).filter((e) => e.eventType === 'asset_discovered').reduce<string | null>((m, e) => (!m || e.at > m ? e.at : m), null);
     const [confirmRemove, setConfirmRemove] = useState(false);
     const [busy, setBusy] = useState(false);
 
@@ -262,17 +270,28 @@ function CollectorInspector({ collector, onClose, onChanged }: { collector: Coll
                 <CollectorMappedInfrastructure collectorId={collector.id} onChanged={onChanged} />
             </div>
             <div>
-                <SectionTitle title="Associated assets" hint="Discovered by this collector once it reached Operational" />
+                <SectionTitle title={`Associated assets (${linkedAssets.length})`} hint="Simulated assets this collector reports; only assets it discovered itself" />
+                {lastDiscovery && <p className="text-[11px] text-foreground-muted mb-2">Last simulated discovery {fmtWat(lastDiscovery)}</p>}
                 {linkedAssets.length === 0
-                    ? <p className="text-xs text-foreground-muted">No assets discovered yet.</p>
-                    : <ul className="space-y-1.5 text-xs">{linkedAssets.map((a) => <li key={a.id} className="flex justify-between gap-2"><span className="font-mono text-foreground">{a.value}</span><span className="text-foreground-muted capitalize">{a.criticality}</span></li>)}</ul>}
+                    ? <p className="text-xs text-foreground-muted">{collector.status === 'operational' ? 'No assets reported yet. Map NCC infrastructure to this collector to discover its assets.' : 'Assets are discovered once this collector reaches Operational.'}</p>
+                    : (
+                        <ul className="space-y-2 text-xs">
+                            {linkedAssets.map((a) => (
+                                <li key={a.id} className="border border-border rounded-lg p-2.5">
+                                    <a href={`/admin/vms/assets/${a.id}`} className="font-mono font-semibold text-blue hover:underline break-all">{a.value}</a>
+                                    {a.ncc && <p className="text-foreground">{a.ncc.name} · {a.ncc.type}</p>}
+                                    <p className="text-foreground-muted">{a.simulated ? 'Simulated collector' : 'Collector discovery'} · {a.discovery?.health === 'reporting' ? 'reporting' : a.status === 'gone' ? 'gone' : 'not reporting'} · last seen {fmtWat(a.last_seen)}</p>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
             </div>
             <div>
                 <SectionTitle title="Status timeline" hint="Advances automatically on the platform clock" />
                 <Timeline empty="No status changes yet." items={collector.statusHistory.slice().reverse().map((h, i) => ({ id: `${collector.id}-${i}`, at: h.at, title: STATUS_LABEL[h.status], meta: new Date(h.at).toLocaleTimeString(), body: h.note ?? null, tone: h.status === 'error' ? 'critical' : h.status === 'operational' ? 'good' : undefined }))} />
             </div>
             <div>
-                <SectionTitle title="Recent ingestion events" />
+                <SectionTitle title="Recent ingestion events" hint="Simulated events from the platform clock" />
                 {events.load.state === 'error' ? <ErrorState error={events.load.error} status={events.load.status} /> : (
                     (events.data?.events.length ?? 0) === 0
                         ? <p className="text-xs text-foreground-muted">No events ingested yet — events appear once this collector reaches "Operational".</p>

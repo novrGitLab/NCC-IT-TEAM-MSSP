@@ -18,7 +18,7 @@ const files = [
     'simulation/types.ts', 'simulation/store.ts', 'simulation/scenarios.ts', 'simulation/engine.ts',
     'simulation/generators/assets.ts', 'simulation/generators/findings.ts', 'simulation/generators/onboarding.ts', 'simulation/generators/soc.ts',
     'simulation/auth/users.ts', 'simulation/soc-policy.ts', 'simulation/soc-runtime.ts',
-    'simulation/collector-mapping.ts', 'simulation/agent-packages.ts',
+    'simulation/collector-mapping.ts', 'simulation/agent-packages.ts', 'simulation/ncc-discovery.ts',
 ];
 for (const file of files) {
     const srcPath = join(backendSrc, file);

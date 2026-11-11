@@ -6,6 +6,7 @@ import { advanceClock } from './clock';
 import { saveState } from './store';
 import { completeOnboardingScan, pushPostureEvent, COLLECTOR_LIFECYCLE } from './engine';
 import { discoverAssetsForCollector } from './generators/onboarding';
+import { syncNccDiscovery } from './ncc-discovery';
 import type { CollectorRecord, CollectorStatus, SimState } from './types';
 
 const TICK_MS = 15_000;
@@ -78,7 +79,10 @@ function progressCollectors(draft: SimState): void {
         collector.statusHistory.push({ at: nowIso, status: next });
         collector.lastHeartbeat = nowIso;
         if (next === 'collecting' || next === 'operational') collector.lastSync = nowIso;
-        if (next === 'operational' && collector.assetsDiscovered === 0) {
+        // Collectors mapped to NCC infrastructure discover through syncNccDiscovery(); the generic
+        // template discovery remains only for collectors created before mappings existed.
+        const nccMapped = draft.collectorMappings.some((m) => m.collectorId === collector.id);
+        if (next === 'operational' && collector.assetsDiscovered === 0 && !nccMapped) {
             collector.health = 'healthy';
             runDiscovery(draft, collector);
         }
@@ -90,6 +94,7 @@ export async function tick(): Promise<void> {
     await saveState((draft) => {
         progressScans(draft);
         progressCollectors(draft);
+        syncNccDiscovery(draft);
     });
 }
 

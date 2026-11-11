@@ -22,7 +22,7 @@ mkdirSync(cacheDir, { recursive: true });
 // node:url) — nothing touches next/headers or next/server, so this subtree transpiles and runs
 // standalone under plain Node ESM. auth/guard.ts and auth/session.ts (which DO need Next.js'
 // request context) are intentionally excluded — engine.ts never imports them.
-const files = ['types.ts', 'store.ts', 'scenarios.ts', 'engine.ts', 'clock.ts', 'scheduler.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'auth/users.ts', 'generators/soc.ts', 'soc-policy.ts', 'soc-runtime.ts'];
+const files = ['ncc-discovery.ts', 'types.ts', 'store.ts', 'scenarios.ts', 'engine.ts', 'clock.ts', 'scheduler.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'auth/users.ts', 'generators/soc.ts', 'soc-policy.ts', 'soc-runtime.ts'];
 for (const file of files) {
     const srcPath = join(srcDir, file);
     const outPath = join(cacheDir, file.replace(/\.ts$/, '.mjs'));
@@ -30,6 +30,17 @@ for (const file of files) {
     const out = ts.transpileModule(readFileSync(srcPath, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: srcPath });
     const rewritten = out.outputText.replace(/from '(\.\.?\/[^']+)'/g, "from '$1.mjs'");
     writeFileSync(outPath, rewritten);
+}
+
+// Runtime contract used by ncc-discovery.ts: emitted beside the flat simulation files, and the
+// top-level '../contracts/' imports are pointed at it.
+{
+    const cSrc = join(root, 'backend', 'src', 'contracts', 'ncc-infrastructure.ts');
+    const cOut = join(cacheDir, 'contracts', 'ncc-infrastructure.mjs');
+    mkdirSync(dirname(cOut), { recursive: true });
+    writeFileSync(cOut, ts.transpileModule(readFileSync(cSrc, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: cSrc }).outputText);
+    const nd = join(cacheDir, 'ncc-discovery.mjs');
+    writeFileSync(nd, readFileSync(nd, 'utf8').replace("from '../contracts/", "from './contracts/"));
 }
 
 // store.ts resolves its data directory from process.cwd() — point it at a scratch directory

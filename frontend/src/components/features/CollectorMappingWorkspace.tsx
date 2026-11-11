@@ -25,6 +25,9 @@ interface MappingRow {
     mappingId: string; collectorId: string; collectorName: string; collectorKind: string;
     infrastructureId: string; infrastructureName: string; infrastructureType: string; hosting: string; quantity: number | null;
     connection: Connection; updatedAt: string; updatedBy: string;
+    discoveredAsset: { id: string; name: string; at: string | null } | null;
+    collectorAssetsDiscovered: number;
+    collectorLastDiscovery: string | null;
 }
 interface UnmappedRow { collectorId: string; collectorName: string; collectorKind: string; connection: Connection }
 interface MappingResponse { rows: MappingRow[]; unmapped: UnmappedRow[]; simulated: true }
@@ -184,16 +187,23 @@ export function CollectorMappingWorkspace() {
                 </div>
             ),
         },
-        { key: 'infra', header: 'Infrastructure', className: 'min-w-[180px]', sort: (r) => r.infrastructureName, render: (r) => <div><p className="text-xs font-semibold text-foreground">{r.infrastructureName}</p><p className="text-[10.5px] text-foreground-muted">{r.hosting}</p></div> },
-        { key: 'type', header: 'Type', hideBelow: 'md', sort: (r) => r.infrastructureType, render: (r) => <span className="text-[11px]">{r.infrastructureType}</span> },
-        { key: 'status', header: 'Connection', sort: (r) => r.connection.view, render: (r) => <ConnectionCell c={r.connection} /> },
+        { key: 'infra', header: 'Infrastructure / type', className: 'min-w-[190px]', sort: (r) => r.infrastructureName, render: (r) => <div><p className="text-xs font-semibold text-foreground">{r.infrastructureName}</p><p className="text-[10.5px] text-foreground">{r.infrastructureType}</p><p className="text-[10.5px] text-foreground-muted">{r.hosting}</p></div> },
         {
-            key: 'heartbeat', header: 'Last heartbeat / data', hideBelow: 'lg', render: (r) => (
-                <div className="text-[11px] text-foreground-muted whitespace-nowrap">
-                    <p>{r.connection.lastHeartbeat ? fmtWat(r.connection.lastHeartbeat) : r.connection.lastHeartbeatLabel}</p>
-                    <p>{r.connection.lastData ? fmtWat(r.connection.lastData) : r.connection.lastDataLabel}</p>
+            key: 'status', header: 'Connection', className: 'min-w-[170px]', sort: (r) => r.connection.view, render: (r) => (
+                <div className="space-y-1">
+                    <ConnectionCell c={r.connection} />
+                    <p className="text-[10.5px] text-foreground-muted whitespace-nowrap">Heartbeat: {r.connection.lastHeartbeat ? fmtWat(r.connection.lastHeartbeat) : r.connection.lastHeartbeatLabel}</p>
+                    <p className="text-[10.5px] text-foreground-muted whitespace-nowrap">Data: {r.connection.lastData ? fmtWat(r.connection.lastData) : r.connection.lastDataLabel}</p>
                 </div>
             ),
+        },
+        {
+            key: 'discovered', header: 'Discovered asset', className: 'min-w-[170px]', sort: (r) => r.discoveredAsset?.at ?? '', render: (r) => r.discoveredAsset ? (
+                <div className="text-[11px]">
+                    <a href={`/admin/vms/assets/${r.discoveredAsset.id}`} onClick={(e) => e.stopPropagation()} className="font-mono text-blue hover:underline break-all">{r.discoveredAsset.name}</a>
+                    <p className="text-foreground-muted">{r.discoveredAsset.at ? `Simulated · ${fmtWat(r.discoveredAsset.at)}` : 'Simulated discovery'}</p>
+                </div>
+            ) : <span className="text-[11px] text-foreground-muted">{r.connection.view === 'connected' || r.connection.view === 'stale' ? 'Discovering…' : 'Awaiting Operational'}</span>,
         },
         {
             key: 'actions', header: 'Actions', render: (r) => canMap ? (

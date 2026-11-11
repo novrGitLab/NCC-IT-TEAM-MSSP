@@ -55,17 +55,28 @@ export function VmsAssetInventory() {
     const [type, setType] = useState(params.get('source') === 'external' ? 'external' : '');
     const [criticality, setCriticality] = useState(params.get('criticality') ?? '');
     const [q, setQ] = useState('');
+    const [source, setSource] = useState(params.get('source') === 'simulated_collector' ? 'simulated_collector' : '');
     const path = useMemo(() => {
         const p = new URLSearchParams();
         if (exposure) p.set('exposure', exposure);
         if (status !== 'all') p.set('status', status);
         if (q) p.set('q', q);
+        if (source) p.set('source', source);
         return `/api/vms/assets?${p.toString()}`;
-    }, [exposure, status, q]);
+    }, [exposure, status, q, source]);
     const { load, data, reload } = useVmsData<{ assets: Asset[] }>(view === 'all' ? path : null);
     const rows = useMemo(() => data?.assets.filter((a) => (!type || (type === 'external' ? a.asset_type !== 'endpoint' : a.asset_type === type)) && (!criticality || a.criticality === criticality)) ?? null, [data, type, criticality]);
     const columns: Column<Asset>[] = [
         { key: 'value', header: 'Asset', className: 'min-w-[200px]', sort: (a) => a.value, render: (a) => <div><p className="font-mono font-semibold text-foreground break-all">{a.value}</p><p className="text-[10.5px] text-foreground-muted">{TYPE_LABEL[a.asset_type] ?? a.asset_type}{a.ips.length && a.asset_type !== 'ip' ? ` · ${a.ips.slice(0, 2).join(', ')}` : ''}{a.status === 'gone' ? ' · gone' : ''}</p></div> },
+        {
+            key: 'ncc', header: 'NCC infrastructure / source', className: 'min-w-[190px]', sort: (a) => a.ncc?.no ?? 99, render: (a) => a.ncc ? (
+                <div className="text-[11px]">
+                    <p className="font-semibold text-foreground">{a.ncc.name}</p>
+                    <p className="text-foreground-muted">{a.ncc.type}</p>
+                    <p className="text-foreground-muted">Simulated Collector{a.discovery?.collectors.length ? `: ${a.discovery.collectors.map((c) => c.name).join(', ')}` : ''} · {a.discovery?.health === 'reporting' ? 'reporting' : 'not reporting'}</p>
+                </div>
+            ) : <span className="text-[11px] text-foreground-muted">{a.discovery_sources.some((x) => x.startsWith('collector:')) ? 'Collector discovery' : 'Scan / inventory'}</span>,
+        },
         { key: 'exposure', header: 'Exposure', sort: (a) => a.exposure, render: (a) => a.exposure === 'internet' ? <Tag><Globe className="w-3 h-3" aria-hidden />Internet</Tag> : <span className="text-[11px] text-foreground-muted">{EXPOSURE_LABEL[a.exposure] ?? a.exposure}</span> },
         { key: 'criticality', header: 'Criticality', sort: (a) => ['critical', 'high', 'medium', 'low'].indexOf(a.criticality), render: (a) => <span className="text-[11px] font-semibold capitalize">{a.criticality}</span> },
         { key: 'findings', header: 'Open findings', sort: (a) => a.findings?.open ?? 0, render: (a) => a.findings?.open ? <div className="flex items-center gap-2"><span className="tabular-nums font-bold w-6 text-right">{a.findings.open}</span><SevBar by={a.findings.by_severity} /></div> : <span className="text-[11px] text-foreground-muted">None</span> },
@@ -87,9 +98,10 @@ export function VmsAssetInventory() {
                         <Select label="Type" value={type} onChange={setType} options={[['', 'Any type'], ['external', 'Found by scans'], ['endpoint', 'Endpoint agents'], ['domain', 'Domains'], ['host', 'Hosts'], ['ip', 'IP addresses']]} />
                         <Select label="Exposure" value={exposure} onChange={setExposure} options={[['', 'Any exposure'], ['internet', 'Internet-facing'], ['internal', 'Internal'], ['unknown', 'Unknown']]} />
                         <Select label="Criticality" value={criticality} onChange={setCriticality} options={[['', 'Any criticality'], ['critical', 'Critical'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']]} />
+                        <Select label="Source" value={source} onChange={setSource} options={[['', 'Any source'], ['simulated_collector', 'Simulated collectors']]} />
                         <Segmented label="Status" value={status} onChange={setStatus} options={[['active', 'Active'], ['gone', 'Gone'], ['all', 'All']]} />
-                        <SearchBox value={q} onSubmit={setQ} placeholder="Hostname or IP" label="Search assets" />
-                        <div className="ml-auto"><ExportCsvButton filename="vms-assets.csv" rows={rows?.map((a) => ({ ...a, open_findings: a.findings?.open ?? 0, max_risk: a.findings?.max_risk ?? '' }))} columns={[{ key: 'value', header: 'Asset' }, { key: 'asset_type', header: 'Type' }, { key: 'exposure', header: 'Exposure' }, { key: 'criticality', header: 'Criticality' }, { key: 'owner', header: 'Owner' }, { key: 'ips', header: 'IPs' }, { key: 'open_findings', header: 'Open findings' }, { key: 'max_risk', header: 'Max risk' }, { key: 'status', header: 'Status' }, { key: 'first_seen', header: 'First seen' }, { key: 'last_seen', header: 'Last seen' }, { key: 'last_assessed_at', header: 'Last assessed' }]} /></div>
+                        <SearchBox value={q} onSubmit={setQ} placeholder="Hostname, IP, NCC item or collector" label="Search assets" />
+                        <div className="ml-auto"><ExportCsvButton filename="vms-assets.csv" rows={rows?.map((a) => ({ ...a, open_findings: a.findings?.open ?? 0, max_risk: a.findings?.max_risk ?? '', ncc_infrastructure: a.ncc?.name ?? '', ncc_type: a.ncc?.type ?? '', source: a.simulated ? 'Simulated Collector' : '', reporting_collectors: a.discovery?.collectors.map((c) => c.name).join('; ') ?? '' }))} columns={[{ key: 'value', header: 'Asset' }, { key: 'ncc_infrastructure', header: 'NCC infrastructure' }, { key: 'ncc_type', header: 'NCC type' }, { key: 'source', header: 'Source' }, { key: 'reporting_collectors', header: 'Reporting collectors' }, { key: 'asset_type', header: 'Type' }, { key: 'exposure', header: 'Exposure' }, { key: 'criticality', header: 'Criticality' }, { key: 'owner', header: 'Owner' }, { key: 'ips', header: 'IPs' }, { key: 'open_findings', header: 'Open findings' }, { key: 'max_risk', header: 'Max risk' }, { key: 'status', header: 'Status' }, { key: 'first_seen', header: 'First seen' }, { key: 'last_seen', header: 'Last seen' }, { key: 'last_assessed_at', header: 'Last assessed' }]} /></div>
                     </div>
                     {load.state === 'error' ? <ErrorState error={load.error} status={load.status} onRetry={reload} />
                         : <DataTable caption="Asset inventory" rows={rows} columns={columns} rowKey={(a) => a.id} onRowClick={(a) => router.push(`/admin/vms/assets/${a.id}`)} initialSort={{ key: 'findings', dir: 'desc' }}
@@ -162,6 +174,19 @@ export function VmsAssetPage({ id }: { id: string }) {
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                     <Card className="xl:col-span-2 space-y-4">
                         <SectionTitle title="Details" />
+                        {a.ncc && (
+                            <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 text-xs border border-border rounded-xl p-3 bg-card-muted">
+                                <D k="NCC infrastructure" v={`${a.ncc.no}. ${a.ncc.name}`} />
+                                <D k="NCC type" v={a.ncc.type} />
+                                <D k="Hosting / service" v={a.ncc.hosting} />
+                                {a.ncc.quantity !== null && <D k="Quantity in NCC register" v={String(a.ncc.quantity)} />}
+                                <D k="Source" v="Simulated Collector (illustrative record, no device contacted)" />
+                                <D k="Reporting collectors" v={a.discovery?.collectors.length ? a.discovery.collectors.map((c) => `${c.name} (${c.status})`).join(', ') : 'None'} />
+                                <D k="Simulated health" v={a.discovery?.health === 'reporting' ? 'Reporting' : 'Not reporting'} />
+                                <D k="First discovered" v={fmtWat(a.first_seen)} />
+                                <D k="Last seen" v={fmtWat(a.last_seen)} />
+                            </dl>
+                        )}
                         <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 text-xs">
                             <D k="IP addresses" v={<span className="font-mono">{a.ips.join(', ') || '—'}</span>} />
                             <D k="Hostnames" v={<span className="font-mono">{a.hostnames.join(', ') || '—'}</span>} />

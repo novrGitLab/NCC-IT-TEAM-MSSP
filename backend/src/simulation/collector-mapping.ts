@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import { loadState, saveState } from './store';
 import { nccInfrastructureById } from '../contracts/ncc-infrastructure';
+import { lastDiscoveryAt, syncNccDiscovery, nccAssetId } from './ncc-discovery';
 import type { CollectorRecord, CollectorInfraMappingRecord, SimState } from './types';
 
 export class MappingError extends Error {
@@ -67,6 +68,10 @@ export interface MappingRow {
     connection: ConnectionState;
     updatedAt: string;
     updatedBy: string;
+    /** The simulated asset this collector reports for this item, once it has been discovered. */
+    discoveredAsset: { id: string; name: string; at: string | null } | null;
+    collectorAssetsDiscovered: number;
+    collectorLastDiscovery: string | null;
 }
 
 /** Rows for the Collector Mapping workspace. Collectors with no mapping appear once with a null mapping. */
@@ -92,10 +97,20 @@ export function listMappingRows(state: SimState, opts: { orgId?: string | null; 
                 mappingId: m.id, collectorId: c.id, collectorName: c.name, collectorKind: c.collectorKind,
                 infrastructureId: item.id, infrastructureName: item.name, infrastructureType: item.type, hosting: item.hosting, quantity: item.quantity,
                 connection: connectionStateOf(c, nowIso), updatedAt: m.updatedAt, updatedBy: m.updatedBy,
+                discoveredAsset: discoveredFor(state, c.id, item.id, c.orgId),
+                collectorAssetsDiscovered: c.assetsDiscovered,
+                collectorLastDiscovery: lastDiscoveryAt(state, c.id),
             });
         }
     }
     return { rows, unmapped, simulated: true };
+}
+
+function discoveredFor(state: SimState, collectorId: string, infrastructureId: string, orgId: string): MappingRow['discoveredAsset'] {
+    const asset = state.assets.find((a) => a.id === nccAssetId(orgId, infrastructureId));
+    if (!asset || !asset.discovery_sources.includes(`collector:${collectorId}`)) return null;
+    const ev = state.ingestionEvents.find((e) => e.collectorId === collectorId && e.eventType === 'asset_discovered' && e.assetId === asset.id);
+    return { id: asset.id, name: asset.value, at: ev?.at ?? null };
 }
 
 function collectorOrThrow(state: SimState, id: string): CollectorRecord {
@@ -125,6 +140,7 @@ export async function createMapping(collectorId: string, infrastructureId: strin
         draft.collectorMappings.push(mapping);
         draft.auditLog.push({ id: `audit-${randomUUID()}`, at: now, actor, action: 'collector.mapping_created', details: { mapping_id: mapping.id, collector_id: collectorId, infrastructure_id: infrastructureId } });
         out.mapping = mapping;
+        syncNccDiscovery(draft);
     });
     return out.mapping as CollectorInfraMappingRecord;
 }
@@ -144,6 +160,7 @@ export async function updateMapping(mappingId: string, infrastructureId: string,
         m.updatedBy = actor;
         draft.auditLog.push({ id: `audit-${randomUUID()}`, at: now, actor, action: 'collector.mapping_updated', details: { mapping_id: mappingId, collector_id: m.collectorId, from: before, to: infrastructureId } });
         out.mapping = m;
+        syncNccDiscovery(draft);
     });
     return out.mapping as CollectorInfraMappingRecord;
 }
@@ -154,6 +171,7 @@ export async function deleteMapping(mappingId: string, actor: string): Promise<v
         if (!m) throw new MappingError('Mapping not found.', 404);
         const now = new Date().toISOString();
         draft.collectorMappings = draft.collectorMappings.filter((x) => x.id !== mappingId);
+        syncNccDiscovery(draft);
         draft.auditLog.push({ id: `audit-${randomUUID()}`, at: now, actor, action: 'collector.mapping_removed', details: { mapping_id: mappingId, collector_id: m.collectorId, infrastructure_id: m.infrastructureId } });
     });
 }

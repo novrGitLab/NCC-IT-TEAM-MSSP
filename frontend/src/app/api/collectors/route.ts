@@ -25,10 +25,14 @@ export async function POST(req: NextRequest) {
         const name = String(body.name ?? '').trim();
         const orgId = String(body.org_id ?? '');
         const collectorKind = KINDS.includes(body.collector_kind) ? body.collector_kind : null;
-        const item = nccInfrastructureById(String(body.ncc_infrastructure_id ?? ''));
-        if (!name || !orgId || !collectorKind || !item) {
-            return NextResponse.json({ error: 'name, org_id, a collector method and an NCC infrastructure item are required' }, { status: 400 });
+        // One or more NCC infrastructure items; ncc_infrastructure_id (single) is still accepted.
+        const requested: unknown[] = Array.isArray(body.ncc_infrastructure_ids) ? body.ncc_infrastructure_ids : body.ncc_infrastructure_id ? [body.ncc_infrastructure_id] : [];
+        const ids = [...new Set(requested.map((x) => String(x)))];
+        const items = ids.map((id) => nccInfrastructureById(id));
+        if (!name || !orgId || !collectorKind || items.length === 0 || items.some((i) => !i) || items.length > 17) {
+            return NextResponse.json({ error: 'name, org_id, a collector method and at least one valid NCC infrastructure item are required' }, { status: 400 });
         }
+        const item = items[0]!;
         if (!getOrganisation(orgId) || (user.orgId && user.orgId !== orgId)) return NextResponse.json({ error: 'Organisation not found' }, { status: 404 });
 
         const collector = await createCollector({
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
             collectionIntervalMinutes: Number(body.collection_interval_minutes ?? 15) || 15,
         });
         try {
-            await createMapping(collector.id, item.id, user.name || user.email);
+            for (const i of items) await createMapping(collector.id, i!.id, user.name || user.email);
         } catch (err) {
             if (err instanceof MappingError) return NextResponse.json({ error: err.message }, { status: err.status });
             throw err;

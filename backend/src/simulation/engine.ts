@@ -4,6 +4,7 @@
 import { randomUUID, randomBytes } from 'node:crypto';
 import { loadState, saveState } from './store';
 import { hashPassword } from './auth/users';
+import { syncNccDiscovery } from './ncc-discovery';
 import type { AiArtifactRecord, AiDiagnosticResult, CollectorInfraCategory, CollectorKind, CollectorRecord, CollectorStatus, FindingRecord, FindingStatus, HandoverLogRecord, IngestionEventRecord, InviteRecord, OrgRecord, PostureEventRecord, PostureEventType, SimState, TaskRecord, UserRecord, UserRole } from './types';
 import type { VmsAsset, VmsScan } from '../contracts/vms';
 
@@ -442,6 +443,7 @@ export async function removeCollector(id: string): Promise<boolean> {
         const before = draft.collectors.length;
         draft.collectors = draft.collectors.filter((c) => c.id !== id);
         draft.collectorMappings = draft.collectorMappings.filter((m) => m.collectorId !== id);
+        syncNccDiscovery(draft);
         removed = draft.collectors.length < before;
     });
     return removed;

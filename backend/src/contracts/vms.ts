@@ -29,6 +29,14 @@ export interface VmsAsset {
     /** Wazuh endpoints (P19; absent before that SQL): what the agent reports, eligibility, next scan. */
     os?: string | null; agent_status?: string | null; agent_last_keepalive?: string | null; agent_groups?: string[];
     scan_eligibility?: VmsEligibility | null; next_scan_at?: string | null;
+    /** Organisation that owns this asset, when known (NCC collector discovery sets it). */
+    org_id?: string | null;
+    /** True for records produced by the platform's simulated collectors, never by a real scan. */
+    simulated?: boolean;
+    /** NCC critical infrastructure this asset represents (simulated collector discovery). */
+    ncc?: { infrastructure_id: string; no: number; name: string; type: string; hosting: string; quantity: number | null } | null;
+    /** Derived on read for simulated collector assets: who reports it and whether it is reporting now. */
+    discovery?: { source: 'Simulated Collector'; collectors: { id: string; name: string; status: string }[]; health: 'reporting' | 'not_reporting' } | null;
 }
 export type AssessmentOutcome = 'reachable_open' | 'reachable_no_open' | 'unreachable' | 'no_route' | 'insufficient_evidence';
 /** What one scan learned about reaching a host (P12). Not the Full Assessment (VmsAssessment, P13). */

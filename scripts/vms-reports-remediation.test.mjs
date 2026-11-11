@@ -14,13 +14,24 @@ const srcDir = join(root, 'backend', 'src', 'simulation');
 const cacheDir = join(root, 'node_modules', '.cache', 'vms-reports-remediation-test');
 mkdirSync(cacheDir, { recursive: true });
 
-const files = ['types.ts', 'store.ts', 'scenarios.ts', 'engine.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'auth/users.ts', 'reports.ts', 'insights.ts', 'remediation-plan.ts', 'generators/soc.ts', 'soc-policy.ts', 'soc-runtime.ts', 'soc-store.ts'];
+const files = ['ncc-discovery.ts', 'types.ts', 'store.ts', 'scenarios.ts', 'engine.ts', 'generators/assets.ts', 'generators/findings.ts', 'generators/onboarding.ts', 'auth/users.ts', 'reports.ts', 'insights.ts', 'remediation-plan.ts', 'generators/soc.ts', 'soc-policy.ts', 'soc-runtime.ts', 'soc-store.ts'];
 for (const file of files) {
     const srcPath = join(srcDir, file);
     const outPath = join(cacheDir, file.replace(/\.ts$/, '.mjs'));
     mkdirSync(dirname(outPath), { recursive: true });
     const out = ts.transpileModule(readFileSync(srcPath, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: srcPath });
     writeFileSync(outPath, out.outputText.replace(/from '(\.\.?\/[^']+)'/g, "from '$1.mjs'"));
+}
+
+// Runtime contract used by ncc-discovery.ts: emitted beside the flat simulation files, and the
+// top-level '../contracts/' imports are pointed at it.
+{
+    const cSrc = join(root, 'backend', 'src', 'contracts', 'ncc-infrastructure.ts');
+    const cOut = join(cacheDir, 'contracts', 'ncc-infrastructure.mjs');
+    mkdirSync(dirname(cOut), { recursive: true });
+    writeFileSync(cOut, ts.transpileModule(readFileSync(cSrc, 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2021 }, fileName: cSrc }).outputText);
+    const nd = join(cacheDir, 'ncc-discovery.mjs');
+    writeFileSync(nd, readFileSync(nd, 'utf8').replace("from '../contracts/", "from './contracts/"));
 }
 
 const scratchCwd = join(root, 'node_modules', '.cache', 'vms-reports-remediation-test-cwd');
